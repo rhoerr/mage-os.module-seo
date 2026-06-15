@@ -1,5 +1,14 @@
 # Planned Feature: Merchant Policies Schema
 
+> **Architecture amendment (roadmap Phase 1):** implement this as an **`OfferEnricherInterface`
+> pool**, not a single `MerchantPolicyProviderInterface`. Each concern (shipping, returns,
+> itemCondition, priceValidUntil) is a separate enricher returning an Offer fragment; the pool
+> collects-all and `AbstractBuilder::buildBase()` merges them into `offers[]`. The
+> [aggregate-rating](aggregate-rating.md) `AggregateRatingEnricher` joins the same pool, so the
+> builder constructor changes once. `ShippingDetailsProviderInterface` remains a sub-hook for
+> live-rate modules. See [architecture-provider-pools.md](architecture-provider-pools.md) and
+> [_roadmap.md](_roadmap.md). The field-by-field config/schema below is unchanged.
+
 **Status:** Planned — not yet implemented  
 **Module:** `MageOS_Seo` (additions to existing product schema builders)  
 **Complexity:** Medium  

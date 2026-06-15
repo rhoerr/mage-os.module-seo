@@ -1,5 +1,19 @@
 # Planned Feature: Multistore Answer Engine Optimization (AEO)
 
+> **Architecture amendment (roadmap Phase 3):** two sub-features have moved to their own specs and
+> adopt the provider-pool pattern:
+> - **Feature 1 (FAQ)** → [faq.md](faq.md) — full subsystem with a source pool, a request-scoped
+>   collector for visible/schema parity, a FAQ widget, and a native Page Builder content type.
+> - **Feature 4 (AggregateRating)** → [aggregate-rating.md](aggregate-rating.md) — a **priority
+>   pool** (native + bridge vendors), superseding the single `preference` binding described below.
+>
+> The remaining features (WebSite/SearchAction, LocalBusiness, Event, Article/BlogPosting, Speakable,
+> llms.txt AEO) stay here but adopt the shared conventions in
+> [architecture-provider-pools.md](architecture-provider-pools.md): each is a provider on the
+> structured-data pool, and all reference the Organisation by the shared `@id` from
+> `Config::getOrganisationId()` (see [onpage-seo-foundation.md](onpage-seo-foundation.md)). See
+> [_roadmap.md](_roadmap.md).
+
 **Status:** Planned — not yet implemented  
 **Complexity:** Very high (multiple discrete sub-features)  
 **Priority driver:** AI answer engines (Google AI Overviews, Bing Copilot, Perplexity, ChatGPT) now surface structured answers directly from schema.org data and `llms.txt`-style feeds — sites without rich AEO signals are increasingly invisible in AI-generated responses.

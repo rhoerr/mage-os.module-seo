@@ -1,5 +1,12 @@
 # Planned Feature: Multistore Hreflang Support
 
+> **Roadmap note (Phase 2):** this feature is already designed as a provider pool
+> (`HreflangResolverInterface` + `ResolverPool`), so it needs no architectural change — it is a
+> reference example of the pattern in
+> [architecture-provider-pools.md](architecture-provider-pools.md). Reuse the shared
+> `Model/Pool/HandleMatcher` for resolver handle matching. Bridge modules (vendor/blog page types)
+> add their own resolver via di.xml. See [_roadmap.md](_roadmap.md).
+
 **Status:** Planned — not yet implemented  
 **Complexity:** High  
 **Priority driver:** Multi-store / multi-language SEO correctness
