@@ -6,6 +6,8 @@ namespace MageOS\Seo\Test\Integration;
 
 use Magento\TestFramework\Helper\Bootstrap;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
+use MageOS\Seo\Model\Hreflang\ResolverPool as HreflangResolverPool;
+use MageOS\Seo\Model\Hreflang\SitemapGenerator as HreflangSitemapGenerator;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
 use MageOS\Seo\Model\MetaTag\Compositor as MetaTagCompositor;
 use MageOS\Seo\Model\PageTitle\Compositor as PageTitleCompositor;
@@ -77,5 +79,17 @@ class DiWiringTest extends TestCase
     {
         $instance = Bootstrap::getObjectManager()->get(AggregateRatingResolver::class);
         $this->assertInstanceOf(AggregateRatingResolver::class, $instance);
+    }
+
+    public function testHreflangResolverPoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(HreflangResolverPool::class);
+        $this->assertInstanceOf(HreflangResolverPool::class, $instance);
+    }
+
+    public function testHreflangSitemapGeneratorIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(HreflangSitemapGenerator::class);
+        $this->assertInstanceOf(HreflangSitemapGenerator::class, $instance);
     }
 }

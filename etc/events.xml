@@ -10,5 +10,21 @@
     <event name="catalog_category_save_after">
         <observer name="rs_seo_invalidate_llms_on_category_save"
                   instance="MageOS\Seo\Observer\InvalidateLlmsTxtCache"/>
+        <observer name="rs_seo_invalidate_hreflang_sitemap_on_category_save"
+                  instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
+    </event>
+
+    <!-- Hreflang sitemap: invalidate when URL-affecting data changes. -->
+    <event name="catalog_product_save_after">
+        <observer name="rs_seo_invalidate_hreflang_sitemap_on_product_save"
+                  instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
+    </event>
+    <event name="cms_page_save_after">
+        <observer name="rs_seo_invalidate_hreflang_sitemap_on_cms_save"
+                  instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
+    </event>
+    <event name="store_save_after">
+        <observer name="rs_seo_invalidate_hreflang_sitemap_on_store_save"
+                  instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
     </event>
 </config>

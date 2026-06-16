@@ -211,6 +211,25 @@
     </type>
 
     <!-- ═══════════════════════════════════════════════════════════════════
+         HREFLANG RESOLVER POOL
+         Bridge modules add resolvers for custom page types (vendor, blog)
+         via their own di.xml.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\Hreflang\ResolverPool">
+        <arguments>
+            <argument name="resolvers" xsi:type="array">
+                <item name="product"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\ProductHreflangResolver</item>
+                <item name="category"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\CategoryHreflangResolver</item>
+                <item name="cmsPage"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\CmsPageHreflangResolver</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
          ROBOTS META POOL
          Applied once per frontend page by Observer\ApplyRobotsMeta
          (etc/frontend/events.xml). Bridge modules add providers for new page

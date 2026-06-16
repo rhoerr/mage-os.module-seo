@@ -13,6 +13,11 @@
                    name="rs_seo.canonical"
                    template="MageOS_Seo::seo/canonical.phtml"/>
 
+            <block class="MageOS\Seo\Block\Hreflang"
+                   name="rs_seo.hreflang"
+                   template="MageOS_Seo::seo/hreflang.phtml"
+                   after="rs_seo.canonical"/>
+
             <block class="MageOS\Seo\Block\JsonLd"
                    name="rs_seo.json_ld"
                    template="MageOS_Seo::seo/json-ld.phtml"/>

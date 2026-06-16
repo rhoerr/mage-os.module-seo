@@ -26,6 +26,11 @@
                 <paginated_enabled>0</paginated_enabled>
                 <paginated_robots>NOINDEX,FOLLOW</paginated_robots>
             </robots_meta>
+            <hreflang>
+                <enabled>1</enabled>
+                <language_only_enabled>1</language_only_enabled>
+                <sitemap_enabled>1</sitemap_enabled>
+            </hreflang>
         </mageos_seo_general>
         <mageos_seo_merchant>
             <condition>

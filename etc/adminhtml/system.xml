@@ -98,6 +98,35 @@
                     </depends>
                 </field>
             </group>
+
+            <group id="hreflang" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Hreflang (Multistore)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Hreflang Tags</label>
+                    <comment>Output rel="alternate" hreflang link tags in the head across store views. No output on single-store pages.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="language_only_enabled" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Add Language-only Tags</label>
+                    <comment>Automatically add hreflang="en" when a base language is served by exactly one store view.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="xdefault_store_id" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>x-default Store View</label>
+                    <comment>Store view to advertise as hreflang x-default. Leave unset to omit x-default.</comment>
+                    <source_model>MageOS\Seo\Model\Config\Source\StoreViews</source_model>
+                </field>
+                <field id="excluded_store_ids" translate="label comment" type="multiselect" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Exclude Store Views</label>
+                    <comment>Store views to omit from all hreflang output (e.g. staging or internal stores).</comment>
+                    <source_model>MageOS\Seo\Model\Config\Source\StoreViews</source_model>
+                </field>
+                <field id="sitemap_enabled" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable /hreflang-sitemap.xml</label>
+                    <comment>Serve a dedicated hreflang sitemap at /hreflang-sitemap.xml. Submit it in Google Search Console alongside your main sitemap.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
         </section>
 
         <section id="mageos_seo_merchant" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">

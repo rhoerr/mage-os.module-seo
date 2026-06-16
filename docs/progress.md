@@ -85,12 +85,45 @@ provider and it applies automatically. This exact hook is fully exercised only b
 null-defaulted ctor args, so the 16 builders' existing tests are untouched (no-op when absent).
 DI smoke tests added in `DiWiringTest`.
 
-## Gate status (local, latest run — Phase 0 + Phase 1)
+## Phase 2 — Multistore SEO (hreflang) ✅
+
+### Deliverable 1 — `<head>` hreflang tags ✅
+- `Api/HreflangResolverInterface` + `Model/Hreflang/ResolverPool` (picks first matching resolver,
+  appends automatic language-only tags + configured x-default, returns nothing for single-store
+  pages). Reuses the shared `HandleMatcher`.
+- `Model/Hreflang/StoreLocaleMap` (active/eligible stores → base URL + BCP 47 locale, excludes
+  inactive/configured-excluded), `UrlRewriteFetcher` (canonical url_rewrite rows per store),
+  `LinkBuilder` (rewrites + map → absolute alternate links).
+- Resolvers: `ProductHreflangResolver`, `CategoryHreflangResolver`, `CmsPageHreflangResolver`
+  (home page uses store base URLs directly). Bridge page types add a resolver via di.xml.
+- `Block/Hreflang` + `seo/hreflang.phtml` injected into `head.additional` (after canonical),
+  FPC-safe.
+- Config group `hreflang` (enabled, language_only_enabled, xdefault_store_id, excluded_store_ids) +
+  `Config` getters + `Model/Config/Source/StoreViews`.
+- Tests: `ResolverPoolTest` (language-only/x-default/single-store/precedence), `StoreLocaleMapTest`,
+  `UrlRewriteFetcherTest`, `LinkBuilderTest`, 3 resolver tests, `StoreViewsTest`, DI smoke test.
+
+### Deliverable 2 — `/hreflang-sitemap.xml` ✅
+- Shared `Model/Hreflang/AlternateBuilder` extracted from `ResolverPool` (the language-only /
+  x-default / single-store rules) so head tags and sitemap stay consistent. `ResolverPool` delegates
+  to it (optional null-default ctor arg — existing tests untouched).
+- `UrlRewriteFetcher::fetchAllForType` (one bulk query per entity type) + `LinkBuilder::buildFromPaths`.
+- `Model/Hreflang/SitemapGenerator` — one `<url>` block per entity per store view, each with the full
+  `<xhtml:link>` set; home pages from store base URLs; ENT_XML1 escaping.
+- `Controller/Hreflangsitemap/Index` (404 when disabled or <2 stores; `Cache-Control` 24h +
+  `X-Magento-Tags: RS_HREFLANG_SITEMAP`) served via `Model/Router/HreflangSitemapRouter` (clean
+  `/hreflang-sitemap.xml`, mirrors the llms router).
+- `Config::isHreflangSitemapEnabled()` + `hreflang/sitemap_enabled` config/admin field.
+- `Observer/InvalidateHreflangSitemapCache` on product/category/cms/store save (etc/events.xml).
+- Tests: `AlternateBuilderTest`, `SitemapGeneratorTest`, `UrlRewriteFetcher::fetchAllForType` cases,
+  DI smoke test.
+
+## Gate status (local, latest run — Phase 0 + 1 + 2 complete)
 
 | Gate | Result |
 |------|--------|
 | php -l | ✅ |
-| PHPUnit unit | ✅ 282 tests / 466 assertions |
+| PHPUnit unit | ✅ 333 tests / 541 assertions |
 | phpcs | ✅ 0 |
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |
@@ -98,6 +131,6 @@ DI smoke tests added in `DiWiringTest`.
 | Infection MSI ≥ 75 | CI (tests written mutation-first) |
 | Integration + di:compile | CI |
 
-## Phases 2–4
+## Phases 3–4
 
 ⏳ Not started. See [`planned-features/_roadmap.md`](planned-features/_roadmap.md).

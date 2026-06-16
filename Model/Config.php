@@ -24,6 +24,11 @@ class Config
     public const XML_ROBOTS_CMS_DEFAULT            = 'mageos_seo_general/robots_meta/cms_page_default';
     public const XML_ROBOTS_PAGINATED_ENABLED      = 'mageos_seo_general/robots_meta/paginated_enabled';
     public const XML_ROBOTS_PAGINATED              = 'mageos_seo_general/robots_meta/paginated_robots';
+    public const XML_HREFLANG_ENABLED              = 'mageos_seo_general/hreflang/enabled';
+    public const XML_HREFLANG_XDEFAULT_STORE       = 'mageos_seo_general/hreflang/xdefault_store_id';
+    public const XML_HREFLANG_EXCLUDED_STORES      = 'mageos_seo_general/hreflang/excluded_store_ids';
+    public const XML_HREFLANG_LANGUAGE_ONLY        = 'mageos_seo_general/hreflang/language_only_enabled';
+    public const XML_HREFLANG_SITEMAP_ENABLED      = 'mageos_seo_general/hreflang/sitemap_enabled';
 
     /**
      * Initialize Config with scope configuration.
@@ -258,5 +263,68 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Check if hreflang alternate output is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isHreflangEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_HREFLANG_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the store view ID to advertise as hreflang x-default (0 = none).
+     *
+     * @return int
+     */
+    public function getHreflangXDefaultStoreId(): int
+    {
+        return (int) $this->scopeConfig->getValue(self::XML_HREFLANG_XDEFAULT_STORE);
+    }
+
+    /**
+     * Return store view IDs excluded from all hreflang output.
+     *
+     * @return int[]
+     */
+    public function getHreflangExcludedStoreIds(): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(self::XML_HREFLANG_EXCLUDED_STORES);
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (string $id): int => (int) trim($id),
+            explode(',', $raw)
+        )));
+    }
+
+    /**
+     * Check if automatic language-only hreflang tags are enabled.
+     *
+     * @return bool
+     */
+    public function isHreflangLanguageOnlyEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_LANGUAGE_ONLY);
+    }
+
+    /**
+     * Check if the /hreflang-sitemap.xml endpoint is enabled.
+     *
+     * @return bool
+     */
+    public function isHreflangSitemapEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_SITEMAP_ENABLED);
     }
 }
