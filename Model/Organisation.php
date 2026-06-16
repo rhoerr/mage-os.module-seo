@@ -211,4 +211,83 @@ class Organisation extends AbstractModel implements OrganisationInterface
     {
         return $this->setData(self::ORG_TYPE, $type);
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function getAddress(): array
+    {
+        return [
+            'street_address'   => (string) $this->getData(self::STREET_ADDRESS),
+            'address_locality' => (string) $this->getData(self::ADDRESS_LOCALITY),
+            'address_region'   => (string) $this->getData(self::ADDRESS_REGION),
+            'postal_code'      => (string) $this->getData(self::POSTAL_CODE),
+            'address_country'  => (string) $this->getData(self::ADDRESS_COUNTRY),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function setLocalPresence(array $data): OrganisationInterface
+    {
+        $fields = [
+            self::STREET_ADDRESS,
+            self::ADDRESS_LOCALITY,
+            self::ADDRESS_REGION,
+            self::POSTAL_CODE,
+            self::ADDRESS_COUNTRY,
+            self::TELEPHONE,
+            self::EMAIL,
+            self::LATITUDE,
+            self::LONGITUDE,
+            self::PRICE_RANGE,
+        ];
+        foreach ($fields as $field) {
+            if (\array_key_exists($field, $data)) {
+                $this->setData($field, (string) $data[$field]);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getLatitude(): string
+    {
+        return (string) $this->getData(self::LATITUDE);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getLongitude(): string
+    {
+        return (string) $this->getData(self::LONGITUDE);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getTelephone(): string
+    {
+        return (string) $this->getData(self::TELEPHONE);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getEmail(): string
+    {
+        return (string) $this->getData(self::EMAIL);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getPriceRange(): string
+    {
+        return (string) $this->getData(self::PRICE_RANGE);
+    }
 }

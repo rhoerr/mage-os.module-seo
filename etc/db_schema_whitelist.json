@@ -30,6 +30,16 @@
             "social_profiles": true,
             "contact_point": true,
             "org_type": true,
+            "street_address": true,
+            "address_locality": true,
+            "address_region": true,
+            "postal_code": true,
+            "address_country": true,
+            "telephone": true,
+            "email": true,
+            "latitude": true,
+            "longitude": true,
+            "price_range": true,
             "updated_at": true
         },
         "constraint": {

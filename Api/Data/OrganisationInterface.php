@@ -17,8 +17,18 @@ interface OrganisationInterface
     public const DESCRIPTION     = 'description';
     public const SOCIAL_PROFILES = 'social_profiles';
     public const CONTACT_POINT   = 'contact_point';
-    public const ORG_TYPE        = 'org_type';
-    public const UPDATED_AT      = 'updated_at';
+    public const ORG_TYPE         = 'org_type';
+    public const STREET_ADDRESS   = 'street_address';
+    public const ADDRESS_LOCALITY = 'address_locality';
+    public const ADDRESS_REGION   = 'address_region';
+    public const POSTAL_CODE      = 'postal_code';
+    public const ADDRESS_COUNTRY  = 'address_country';
+    public const TELEPHONE        = 'telephone';
+    public const EMAIL            = 'email';
+    public const LATITUDE         = 'latitude';
+    public const LONGITUDE        = 'longitude';
+    public const PRICE_RANGE      = 'price_range';
+    public const UPDATED_AT       = 'updated_at';
 
     /**
      * Get entity ID.
@@ -191,4 +201,57 @@ interface OrganisationInterface
      * @return \MageOS\Seo\Api\Data\OrganisationInterface
      */
     public function setOrgType(string $type): OrganisationInterface;
+
+    /**
+     * Decoded LocalBusiness address: street, locality, region, postcode, country (any may be empty).
+     *
+     * @return array<string, string>
+     */
+    public function getAddress(): array;
+
+    /**
+     * Set LocalBusiness presence fields from a keyed array.
+     *
+     * Recognised keys: street_address, address_locality, address_region, postal_code,
+     * address_country, telephone, email, latitude, longitude, price_range. Only present keys are set.
+     *
+     * @param array<string,string> $data
+     * @return \MageOS\Seo\Api\Data\OrganisationInterface
+     */
+    public function setLocalPresence(array $data): OrganisationInterface;
+
+    /**
+     * Geo latitude, or empty string if unset.
+     *
+     * @return string
+     */
+    public function getLatitude(): string;
+
+    /**
+     * Geo longitude, or empty string if unset.
+     *
+     * @return string
+     */
+    public function getLongitude(): string;
+
+    /**
+     * Contact telephone, or empty string.
+     *
+     * @return string
+     */
+    public function getTelephone(): string;
+
+    /**
+     * Contact email, or empty string.
+     *
+     * @return string
+     */
+    public function getEmail(): string;
+
+    /**
+     * Price range indicator (e.g. ££), or empty string.
+     *
+     * @return string
+     */
+    public function getPriceRange(): string;
 }

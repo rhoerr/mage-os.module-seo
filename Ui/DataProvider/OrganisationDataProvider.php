@@ -116,6 +116,16 @@ class OrganisationDataProvider extends AbstractDataProvider
             'contact_contactType'      => $contactPoint['contactType'] ?? '',
             'contact_email'            => $contactPoint['email'] ?? '',
             'contact_availableLanguage' => $contactPoint['availableLanguage'] ?? '',
+            'street_address'           => $org->getAddress()['street_address'],
+            'address_locality'         => $org->getAddress()['address_locality'],
+            'address_region'           => $org->getAddress()['address_region'],
+            'postal_code'              => $org->getAddress()['postal_code'],
+            'address_country'          => $org->getAddress()['address_country'],
+            'telephone'                => $org->getTelephone(),
+            'email'                    => $org->getEmail(),
+            'latitude'                 => $org->getLatitude(),
+            'longitude'                => $org->getLongitude(),
+            'price_range'              => $org->getPriceRange(),
         ];
 
         return $this->loadedData;

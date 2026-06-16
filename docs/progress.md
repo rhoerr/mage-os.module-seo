@@ -145,19 +145,30 @@ DI smoke tests added in `DiWiringTest`.
   three providers wired into the structured-data Compositor (Compositor DI smoke test covers them).
 - Tests: `ArticleSchemaProviderTest`, `EventSchemaProviderTest`, `SpeakableProviderTest`.
 
-### 3b — LocalBusiness expansion ⏳
-- Organisation address/geo/opening-hours columns + `LocalBusinessProvider`. Not started.
+### 3b — LocalBusiness expansion ✅ (opening-hours deferred)
+- 10 nullable columns on `mage-os_seo_organisation` (street/locality/region/postcode/country,
+  telephone, email, latitude, longitude, price_range) + db_schema_whitelist; `OrganisationInterface`
+  constants + `getAddress`/`getLatitude`/`getLongitude`/`getTelephone`/`getEmail`/`getPriceRange`
+  getters + `setLocalPresence(array)`; model impl.
+- **No separate LocalBusinessProvider** — the structured-data Compositor collects-all (no
+  precedence), so a second org provider would duplicate the node. Instead `OrganizationProvider`
+  emits `address` (PostalAddress), `geo` (GeoCoordinates), `telephone`, `email`, `priceRange` when
+  populated; `@type` comes from the existing `org_type` (set it to Store/LocalBusiness subtype).
+- Admin "Local Presence" fieldset in the Organisation form + Save controller mapping + DataProvider
+  hydration.
+- Tests: `OrganizationProviderTest` extended (populated/empty/geo-needs-both cases).
+- ⏳ DEFERRED: `openingHoursSpecification` (needs a dynamic-rows admin UI) — own follow-up.
 
 ### 3c — FAQ subsystem ⏳
 - Data + source pool + collector + renderer + schema (head/late) + widget + native PB content type +
   admin UI. See `planned-features/faq.md`. Not started.
 
-## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a)
+## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a + 3b)
 
 | Gate | Result |
 |------|--------|
 | php -l | ✅ |
-| PHPUnit unit | ✅ 347 tests / 568 assertions |
+| PHPUnit unit | ✅ 350 tests / 582 assertions |
 | phpcs | ✅ 0 |
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |

@@ -19,6 +19,16 @@
         <column xsi:type="text" name="social_profiles" nullable="true" comment="JSON array of social profile URLs"/>
         <column xsi:type="text" name="contact_point" nullable="true" comment="JSON object: contactType, email, availableLanguage"/>
         <column xsi:type="varchar" name="org_type" nullable="false" length="64" default="Organization" comment="Schema.org @type"/>
+        <column xsi:type="varchar" name="street_address" nullable="true" length="255" comment="LocalBusiness street address"/>
+        <column xsi:type="varchar" name="address_locality" nullable="true" length="128" comment="City / town"/>
+        <column xsi:type="varchar" name="address_region" nullable="true" length="128" comment="County / state"/>
+        <column xsi:type="varchar" name="postal_code" nullable="true" length="32" comment="Postcode / ZIP"/>
+        <column xsi:type="varchar" name="address_country" nullable="true" length="2" comment="ISO 3166-1 alpha-2 country"/>
+        <column xsi:type="varchar" name="telephone" nullable="true" length="64" comment="Contact telephone"/>
+        <column xsi:type="varchar" name="email" nullable="true" length="255" comment="Contact email"/>
+        <column xsi:type="varchar" name="latitude" nullable="true" length="32" comment="Geo latitude"/>
+        <column xsi:type="varchar" name="longitude" nullable="true" length="32" comment="Geo longitude"/>
+        <column xsi:type="varchar" name="price_range" nullable="true" length="16" comment="Price range indicator"/>
         <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP"
                 on_update="true" comment="Last updated"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
