@@ -6,20 +6,29 @@ namespace MageOS\Seo\Model\StructuredData;
 
 use Magento\Framework\View\Layout;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use MageOS\Seo\Model\Product\SchemaRegistry;
 
 class Compositor
 {
     /**
+     * @var HandleMatcher
+     */
+    private readonly HandleMatcher $handleMatcher;
+
+    /**
      * @param Layout $layout
      * @param SchemaRegistry $schemaRegistry
      * @param array<mixed> $providers
+     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
         private readonly Layout         $layout,
         private readonly SchemaRegistry $schemaRegistry,
-        private readonly array          $providers = []
+        private readonly array          $providers = [],
+        ?HandleMatcher $handleMatcher = null
     ) {
+        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**
@@ -43,7 +52,7 @@ class Compositor
             if (!$provider instanceof StructuredDataProviderInterface) {
                 continue;
             }
-            if (!$this->handlesMatch($provider->getHandles(), $activeHandles)) {
+            if (!$this->handleMatcher->matches($provider->getHandles(), $activeHandles)) {
                 continue;
             }
             foreach ($provider->getSchemas() as $schema) {
@@ -78,20 +87,5 @@ class Compositor
         $json = str_replace(['</', '<!--'], ['<\/', '<\!--'], $json);
 
         return $json;
-    }
-
-    /**
-     * Check whether any provider handle matches the current page's active handles.
-     *
-     * @param string[] $providerHandles
-     * @param string[] $activeHandles
-     * @return bool
-     */
-    private function handlesMatch(array $providerHandles, array $activeHandles): bool
-    {
-        if (\in_array('*', $providerHandles, true)) {
-            return true;
-        }
-        return !empty(array_intersect($providerHandles, $activeHandles));
     }
 }

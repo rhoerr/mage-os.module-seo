@@ -9,7 +9,10 @@ use MageOS\Seo\Api\OrganisationRepositoryInterface;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
 use MageOS\Seo\Model\MetaTag\Compositor as MetaTagCompositor;
 use MageOS\Seo\Model\PageTitle\Compositor as PageTitleCompositor;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Product\SchemaBuilderPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
+use MageOS\Seo\Model\RobotsMeta\Resolver as RobotsMetaResolver;
 use MageOS\Seo\Model\StructuredData\Compositor as StructuredDataCompositor;
 use PHPUnit\Framework\TestCase;
 
@@ -56,5 +59,23 @@ class DiWiringTest extends TestCase
     {
         $instance = Bootstrap::getObjectManager()->get(LlmsTxtBuilder::class);
         $this->assertInstanceOf(LlmsTxtBuilder::class, $instance);
+    }
+
+    public function testRobotsMetaResolverIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(RobotsMetaResolver::class);
+        $this->assertInstanceOf(RobotsMetaResolver::class, $instance);
+    }
+
+    public function testOfferEnricherPoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(OfferEnricherPool::class);
+        $this->assertInstanceOf(OfferEnricherPool::class, $instance);
+    }
+
+    public function testAggregateRatingResolverIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(AggregateRatingResolver::class);
+        $this->assertInstanceOf(AggregateRatingResolver::class, $instance);
     }
 }

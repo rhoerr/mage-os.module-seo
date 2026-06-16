@@ -55,6 +55,10 @@
     <type name="MageOS\Seo\Model\MetaTag\Compositor">
         <arguments>
             <argument name="providers" xsi:type="array">
+                <!-- Site-level OG + Twitter card — runs on every page -->
+                <item name="siteMeta"
+                      xsi:type="object">MageOS\Seo\Model\MetaTag\Provider\SiteMetaProvider</item>
+
                 <item name="productMeta"
                       xsi:type="object">MageOS\Seo\Model\MetaTag\Provider\ProductMetaProvider</item>
 
@@ -179,22 +183,59 @@
     </type>
 
     <!-- ═══════════════════════════════════════════════════════════════════
-         PLUGINS
+         PRODUCT OFFER ENRICHERS + AGGREGATE RATING POOL
+         Consumed by AbstractBuilder::buildBase(). Bridge modules add their own
+         OfferEnricherInterface / AggregateRatingProviderInterface via di.xml.
          ═══════════════════════════════════════════════════════════════════ -->
 
-    <!-- Robots meta: product view controller -->
-    <type name="Magento\Catalog\Controller\Product\View">
-        <plugin name="rs_seo_product_robots_meta"
-                type="MageOS\Seo\Plugin\Controller\ProductRobotsMetaPlugin"
-                sortOrder="10"/>
+    <type name="MageOS\Seo\Model\Product\OfferEnricher\Pool">
+        <arguments>
+            <argument name="enrichers" xsi:type="array">
+                <item name="itemCondition"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ItemConditionEnricher</item>
+                <item name="returnPolicy"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ReturnPolicyEnricher</item>
+                <item name="shippingDetails"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ShippingDetailsEnricher</item>
+            </argument>
+        </arguments>
     </type>
 
-    <!-- Robots meta: category view controller -->
-    <type name="Magento\Catalog\Controller\Category\View">
-        <plugin name="rs_seo_category_robots_meta"
-                type="MageOS\Seo\Plugin\Controller\CategoryRobotsMetaPlugin"
-                sortOrder="10"/>
+    <type name="MageOS\Seo\Model\Review\AggregateRatingResolver">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="native"
+                      xsi:type="object">MageOS\Seo\Model\Review\NativeAggregateRatingProvider</item>
+            </argument>
+        </arguments>
     </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ROBOTS META POOL
+         Applied once per frontend page by Observer\ApplyRobotsMeta
+         (etc/frontend/events.xml). Bridge modules add providers for new page
+         types (blog, vendor) via their own di.xml — no applier needed.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\RobotsMeta\Resolver">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="product"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\ProductRobotsProvider</item>
+                <item name="category"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CategoryRobotsProvider</item>
+                <item name="cmsPage"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CmsPageRobotsProvider</item>
+                <!-- Paginated listing pages (?p=N) — higher sortOrder wins over category default -->
+                <item name="catalogPagination"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CatalogPaginationRobotsProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PLUGINS
+         ═══════════════════════════════════════════════════════════════════ -->
 
     <!-- Category SEO tab persistence -->
     <type name="Magento\Catalog\Api\CategoryRepositoryInterface">

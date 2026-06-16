@@ -16,10 +16,14 @@ class Config
     public const XML_SD_CATEGORY_ITEM_LIST_MAX     = 'mageos_seo_general/structured_data/category_item_list_max';
     public const XML_SD_HAS_VARIANT_MAX            = 'mageos_seo_general/structured_data/has_variant_max';
     public const XML_SD_PRICE_VALID_UNTIL_MONTHS   = 'mageos_seo_general/structured_data/price_valid_until_months';
+    public const XML_SD_AGGREGATE_RATING_ENABLED   = 'mageos_seo_general/structured_data/aggregate_rating_enabled';
     public const XML_LLMS_ENABLED                  = 'mageos_seo_general/llms_txt/enabled';
     public const XML_LLMS_FULL_ENABLED             = 'mageos_seo_general/llms_txt/full_enabled';
     public const XML_ROBOTS_PRODUCT_DEFAULT        = 'mageos_seo_general/robots_meta/product_default';
     public const XML_ROBOTS_CATEGORY_DEFAULT       = 'mageos_seo_general/robots_meta/category_default';
+    public const XML_ROBOTS_CMS_DEFAULT            = 'mageos_seo_general/robots_meta/cms_page_default';
+    public const XML_ROBOTS_PAGINATED_ENABLED      = 'mageos_seo_general/robots_meta/paginated_enabled';
+    public const XML_ROBOTS_PAGINATED              = 'mageos_seo_general/robots_meta/paginated_robots';
 
     /**
      * Initialize Config with scope configuration.
@@ -137,6 +141,21 @@ class Config
     }
 
     /**
+     * Check if AggregateRating output on product schema is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isAggregateRatingEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_SD_AGGREGATE_RATING_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
      * Check if the llms.txt endpoint is enabled.
      *
      * @param int|string|null $storeId
@@ -191,6 +210,51 @@ class Config
     {
         return (string) $this->scopeConfig->getValue(
             self::XML_ROBOTS_CATEGORY_DEFAULT,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the default robots meta value for CMS pages.
+     *
+     * @param int|string|null $storeId
+     * @return string
+     */
+    public function getRobotsCmsDefault(int|string|null $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_CMS_DEFAULT,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check whether a dedicated robots meta is applied to paginated listing pages (?p=N, N>1).
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isPaginatedRobotsEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_PAGINATED_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the robots meta value applied to paginated listing pages (?p=N, N>1).
+     *
+     * @param int|string|null $storeId
+     * @return string
+     */
+    public function getRobotsPaginated(int|string|null $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_PAGINATED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

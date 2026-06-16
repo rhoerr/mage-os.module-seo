@@ -7,17 +7,26 @@ namespace MageOS\Seo\Model\StructuredData\Provider;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
+use MageOS\Seo\Model\StructuredData\OrganisationId;
 
 class OrganizationProvider implements StructuredDataProviderInterface
 {
     /**
+     * @var OrganisationId
+     */
+    private readonly OrganisationId $organisationId;
+
+    /**
      * @param OrganisationRepositoryInterface $organisationRepository
      * @param StoreManagerInterface $storeManager
+     * @param OrganisationId|null $organisationId
      */
     public function __construct(
         private readonly OrganisationRepositoryInterface $organisationRepository,
-        private readonly StoreManagerInterface           $storeManager
+        private readonly StoreManagerInterface           $storeManager,
+        ?OrganisationId $organisationId = null
     ) {
+        $this->organisationId = $organisationId ?? new OrganisationId($organisationRepository, $storeManager);
     }
 
     /**
@@ -42,7 +51,7 @@ class OrganizationProvider implements StructuredDataProviderInterface
         }
 
         $baseUrl = rtrim($org->getUrl(), '/');
-        $orgId   = $baseUrl . '/#organization';
+        $orgId   = $this->organisationId->fromUrl($org->getUrl());
 
         $orgSchema = [
             '@context' => 'https://schema.org',

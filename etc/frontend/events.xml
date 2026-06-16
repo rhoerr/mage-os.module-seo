@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <!--
+        Apply the resolved robots meta value once per frontend page, after blocks are generated
+        and before the head is rendered. Covers product, category, CMS and any bridge page type
+        whose provider is registered in the MageOS\Seo\Model\RobotsMeta\Resolver pool.
+    -->
+    <event name="layout_generate_blocks_after">
+        <observer name="rs_seo_apply_robots_meta"
+                  instance="MageOS\Seo\Observer\ApplyRobotsMeta"/>
+    </event>
+</config>

@@ -16,10 +16,19 @@ class RobotsMeta implements OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
-            ['value' => 'INDEX,FOLLOW',   'label' => 'INDEX, FOLLOW'],
-            ['value' => 'NOINDEX,FOLLOW', 'label' => 'NOINDEX, FOLLOW'],
-            ['value' => 'INDEX,NOFOLLOW', 'label' => 'INDEX, NOFOLLOW'],
+            ['value' => 'INDEX,FOLLOW',     'label' => 'INDEX, FOLLOW'],
+            ['value' => 'NOINDEX,FOLLOW',   'label' => 'NOINDEX, FOLLOW'],
+            ['value' => 'INDEX,NOFOLLOW',   'label' => 'INDEX, NOFOLLOW'],
             ['value' => 'NOINDEX,NOFOLLOW', 'label' => 'NOINDEX, NOFOLLOW'],
+            [
+                'value' => 'INDEX,FOLLOW,max-image-preview:large,max-snippet:-1',
+                'label' => 'INDEX, FOLLOW (rich previews: max-image-preview:large, max-snippet:-1)',
+            ],
+            ['value' => 'NOINDEX,FOLLOW,noarchive',   'label' => 'NOINDEX, FOLLOW, noarchive'],
+            [
+                'value' => 'NOINDEX,NOFOLLOW,noai,noimageai',
+                'label' => 'NOINDEX, NOFOLLOW, noai, noimageai (block AI training)',
+            ],
         ];
     }
 }

@@ -11,6 +11,8 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\ProductSchemaBuilderInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
 
 abstract class AbstractBuilder implements ProductSchemaBuilderInterface
@@ -22,12 +24,24 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     protected const CONDITION_NEW           = 'https://schema.org/NewCondition';
 
     /**
+     * @var OfferEnricherPool
+     */
+    protected readonly OfferEnricherPool $offerEnricherPool;
+
+    /**
+     * @var AggregateRatingResolver
+     */
+    protected readonly AggregateRatingResolver $aggregateRatingResolver;
+
+    /**
      * @param StoreManagerInterface $storeManager
      * @param CurrencyService $currencyService
      * @param StockRegistryInterface $stockRegistry
      * @param ImageHelper $imageHelper
      * @param Config $seoConfig
      * @param DateTime $dateTime
+     * @param OfferEnricherPool|null $offerEnricherPool
+     * @param AggregateRatingResolver|null $aggregateRatingResolver
      */
     public function __construct(
         protected readonly StoreManagerInterface  $storeManager,
@@ -35,8 +49,12 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
         protected readonly StockRegistryInterface $stockRegistry,
         protected readonly ImageHelper            $imageHelper,
         protected readonly Config                 $seoConfig,
-        protected readonly DateTime               $dateTime
+        protected readonly DateTime               $dateTime,
+        ?OfferEnricherPool $offerEnricherPool = null,
+        ?AggregateRatingResolver $aggregateRatingResolver = null
     ) {
+        $this->offerEnricherPool       = $offerEnricherPool ?? new OfferEnricherPool();
+        $this->aggregateRatingResolver = $aggregateRatingResolver ?? new AggregateRatingResolver();
     }
 
     /**
@@ -94,7 +112,87 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
             $schema['image'] = \count($images) === 1 ? $images[0] : $images;
         }
 
+        $storeId = (int) $store->getId();
+
+        // AggregateOffer for products that expose a price range (e.g. configurable).
+        $priceRange = $this->resolvePriceRange($product, $variantData);
+        if ($priceRange !== null) {
+            $schema['offers'] = $this->buildAggregateOffer($schema['offers'], $priceRange);
+        }
+
+        // Offer enrichment: shipping, returns, item condition, … (pluggable pool).
+        $offerAdditions = $this->offerEnricherPool->enrich($product, $storeId);
+        if (!empty($offerAdditions)) {
+            $schema['offers'] = array_merge($schema['offers'], $offerAdditions);
+        }
+
+        // Product-level AggregateRating from the (pluggable) rating provider pool.
+        if ($this->seoConfig->isAggregateRatingEnabled($storeId)) {
+            $rating = $this->aggregateRatingResolver->resolve((int) $product->getId(), $storeId);
+            if ($rating !== null) {
+                $schema['aggregateRating'] = array_merge(['@type' => 'AggregateRating'], $rating);
+            }
+        }
+
         return $schema;
+    }
+
+    /**
+     * Resolve a low/high price range for products that have one (configurable), or null.
+     *
+     * Returns null for single-variant requests and any product whose final price does not expose a
+     * usable minimal/maximal range, so the standard single Offer is kept.
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @param mixed[] $variantData
+     * @return array{low: float, high: float}|null
+     */
+    protected function resolvePriceRange(ProductInterface $product, array $variantData): ?array
+    {
+        if (!empty($variantData)) {
+            return null;
+        }
+        if ($product->getTypeId() !== 'configurable') {
+            return null;
+        }
+
+        try {
+            /** @var \Magento\Catalog\Model\Product $product */
+            $finalPrice = $product->getPriceInfo()->getPrice('final_price');
+            if (!method_exists($finalPrice, 'getMinimalPrice') || !method_exists($finalPrice, 'getMaximalPrice')) {
+                return null;
+            }
+            $min = (float) $finalPrice->getMinimalPrice()->getValue();
+            $max = (float) $finalPrice->getMaximalPrice()->getValue();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($min <= 0.0 || $max <= 0.0 || $min >= $max) {
+            return null;
+        }
+
+        return ['low' => $min, 'high' => $max];
+    }
+
+    /**
+     * Convert a single Offer node into an AggregateOffer with low/high price.
+     *
+     * Preserves currency, availability, url and any other Offer fields; replaces the scalar price
+     * with lowPrice/highPrice.
+     *
+     * @param mixed[] $offer
+     * @param float[] $range
+     * @return mixed[]
+     */
+    protected function buildAggregateOffer(array $offer, array $range): array
+    {
+        $offer['@type'] = 'AggregateOffer';
+        unset($offer['price']);
+        $offer['lowPrice']  = number_format($range['low'], 2, '.', '');
+        $offer['highPrice'] = number_format($range['high'], 2, '.', '');
+
+        return $offer;
     }
 
     /**

@@ -13,6 +13,7 @@
                 <category_item_list_max>36</category_item_list_max>
                 <has_variant_max>50</has_variant_max>
                 <price_valid_until_months>12</price_valid_until_months>
+                <aggregate_rating_enabled>1</aggregate_rating_enabled>
             </structured_data>
             <llms_txt>
                 <enabled>1</enabled>
@@ -21,7 +22,25 @@
             <robots_meta>
                 <product_default>INDEX,FOLLOW</product_default>
                 <category_default>INDEX,FOLLOW</category_default>
+                <cms_page_default>INDEX,FOLLOW</cms_page_default>
+                <paginated_enabled>0</paginated_enabled>
+                <paginated_robots>NOINDEX,FOLLOW</paginated_robots>
             </robots_meta>
         </mageos_seo_general>
+        <mageos_seo_merchant>
+            <condition>
+                <default_condition>https://schema.org/NewCondition</default_condition>
+            </condition>
+            <return>
+                <enabled>0</enabled>
+                <policy_category>https://schema.org/MerchantReturnFiniteReturnWindow</policy_category>
+                <days>30</days>
+                <fees>https://schema.org/FreeReturn</fees>
+                <refund_type>https://schema.org/FullRefund</refund_type>
+            </return>
+            <shipping>
+                <enabled>0</enabled>
+            </shipping>
+        </mageos_seo_merchant>
     </default>
 </config>

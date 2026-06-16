@@ -50,6 +50,11 @@
                     <comment>Number of months from today to set as priceValidUntil on offers. Default: 12.</comment>
                     <validate>validate-digits validate-greater-than-zero</validate>
                 </field>
+                <field id="aggregate_rating_enabled" translate="label comment" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable AggregateRating</label>
+                    <comment>Output aggregateRating (review score + count) on product schema. Source is pluggable — native Magento reviews by default, or a bridge module (Yotpo, Trustpilot, …).</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
 
             <group id="llms_txt" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -75,6 +80,124 @@
                 <field id="category_default" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Category Pages Default</label>
                     <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                </field>
+                <field id="cms_page_default" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>CMS Pages Default</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                </field>
+                <field id="paginated_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Override Robots on Paginated Pages</label>
+                    <comment>Apply a dedicated robots meta to category listing pages from page 2 onward (?p=2+). Canonicalisation is left to Magento's native category canonical tag.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="paginated_robots" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Paginated Pages Robots</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                    <depends>
+                        <field id="paginated_enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+        </section>
+
+        <section id="mageos_seo_merchant" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>SEO Merchant Policies</label>
+            <tab>mageos_seo</tab>
+            <resource>MageOS_Seo::config</resource>
+
+            <group id="condition" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Item Condition</label>
+                <field id="default_condition" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Item Condition</label>
+                    <comment>schema.org itemCondition applied to all product offers.</comment>
+                    <source_model>MageOS\Seo\Model\Config\Source\ItemCondition</source_model>
+                </field>
+            </group>
+
+            <group id="return" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Return Policy (hasMerchantReturnPolicy)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Return Policy Schema</label>
+                    <comment>Output hasMerchantReturnPolicy on product offers. Required for Google Merchant free listings.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="applicable_country" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Applicable Country</label>
+                    <comment>ISO 3166-1 alpha-2 code, e.g. GB.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="policy_category" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return Policy Category</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\ReturnPolicyCategory</source_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="days" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return Window (days)</label>
+                    <comment>Used only with a finite return window.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="method" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return Method</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\ReturnMethod</source_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="fees" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return Fees</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\ReturnFees</source_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="refund_type" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Refund Type</label>
+                    <source_model>MageOS\Seo\Model\Config\Source\RefundType</source_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="policy_url" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Returns Policy URL</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+
+            <group id="shipping" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Shipping Details (OfferShippingDetails)</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Shipping Details Schema</label>
+                    <comment>Output a single domestic OfferShippingDetails zone on product offers.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="label" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Shipping Label</label>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="destination_country" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Destination Country</label>
+                    <comment>ISO 3166-1 alpha-2 code, e.g. GB.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="rate" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Shipping Rate</label>
+                    <comment>0.00 for free shipping. Currency follows the store display currency.</comment>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="handling_min" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Handling Time Min (days)</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="handling_max" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Handling Time Max (days)</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="transit_min" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Transit Time Min (days)</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="transit_max" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Transit Time Max (days)</label>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
         </section>
