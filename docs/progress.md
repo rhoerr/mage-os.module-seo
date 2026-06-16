@@ -131,6 +131,40 @@ DI smoke tests added in `DiWiringTest`.
 | Infection MSI ≥ 75 | CI (tests written mutation-first) |
 | Integration + di:compile | CI |
 
-## Phases 3–4
+## Phase 3 — AEO content + identity 🟡 (3a done; LocalBusiness + FAQ pending)
+
+### 3a — Article / Event / Speakable ✅
+- `Api/ArticleDataProviderInterface` + `Api/EventDataProviderInterface` (bridge-fed pools, empty by
+  default) → `Model/StructuredData/Provider/ArticleSchemaProvider` (BlogPosting; author+publisher
+  reference the shared Organisation `@id`) and `EventSchemaProvider` (one Event node per event,
+  organizer = Organisation `@id`). Both reuse `HandleMatcher` to match sub-provider handles and the
+  Phase-0c `OrganisationId` service.
+- `Model/StructuredData/Provider/SpeakableProvider` — WebPage + SpeakableSpecification from config;
+  disabled by default.
+- New `aeo` config group (`speakable_enabled`, `speakable_css_selectors`) + `Config` getters; all
+  three providers wired into the structured-data Compositor (Compositor DI smoke test covers them).
+- Tests: `ArticleSchemaProviderTest`, `EventSchemaProviderTest`, `SpeakableProviderTest`.
+
+### 3b — LocalBusiness expansion ⏳
+- Organisation address/geo/opening-hours columns + `LocalBusinessProvider`. Not started.
+
+### 3c — FAQ subsystem ⏳
+- Data + source pool + collector + renderer + schema (head/late) + widget + native PB content type +
+  admin UI. See `planned-features/faq.md`. Not started.
+
+## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a)
+
+| Gate | Result |
+|------|--------|
+| php -l | ✅ |
+| PHPUnit unit | ✅ 347 tests / 568 assertions |
+| phpcs | ✅ 0 |
+| php-cs-fixer | ✅ 0 |
+| PHPStan | ✅ 0 |
+| XML well-formed | ✅ |
+| Infection MSI ≥ 75 | CI (Phases 0–2 confirmed green in CI; tests written mutation-first) |
+| Integration + di:compile | CI (Phases 0–2 confirmed green in CI) |
+
+## Phase 4
 
 ⏳ Not started. See [`planned-features/_roadmap.md`](planned-features/_roadmap.md).

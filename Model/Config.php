@@ -29,6 +29,8 @@ class Config
     public const XML_HREFLANG_EXCLUDED_STORES      = 'mageos_seo_general/hreflang/excluded_store_ids';
     public const XML_HREFLANG_LANGUAGE_ONLY        = 'mageos_seo_general/hreflang/language_only_enabled';
     public const XML_HREFLANG_SITEMAP_ENABLED      = 'mageos_seo_general/hreflang/sitemap_enabled';
+    public const XML_AEO_SPEAKABLE_ENABLED         = 'mageos_seo_general/aeo/speakable_enabled';
+    public const XML_AEO_SPEAKABLE_SELECTORS       = 'mageos_seo_general/aeo/speakable_css_selectors';
 
     /**
      * Initialize Config with scope configuration.
@@ -326,5 +328,40 @@ class Config
     public function isHreflangSitemapEnabled(): bool
     {
         return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_SITEMAP_ENABLED);
+    }
+
+    /**
+     * Check if Speakable structured data output is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isSpeakableEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_AEO_SPEAKABLE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the configured Speakable CSS selectors (one per line in admin).
+     *
+     * @param int|string|null $storeId
+     * @return string[]
+     */
+    public function getSpeakableCssSelectors(int|string|null $storeId = null): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(
+            self::XML_AEO_SPEAKABLE_SELECTORS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw) ?: [])));
     }
 }

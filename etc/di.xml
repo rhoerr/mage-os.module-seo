@@ -35,6 +35,14 @@
                 <item name="cmsPage"
                       xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\CmsPageSchemaProvider</item>
 
+                <!-- AEO: bridge-fed Article + Event pools (empty by default) and Speakable -->
+                <item name="article"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\ArticleSchemaProvider</item>
+                <item name="event"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\EventSchemaProvider</item>
+                <item name="speakable"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\SpeakableProvider</item>
+
                 <!--
                     Bridge module providers are registered here by their own di.xml files.
                     DO NOT add MageOS_SellersSeo or MageOS_ProductVariantUrlSeo

@@ -127,6 +127,20 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
+
+            <group id="aeo" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Answer Engine Optimization (AEO)</label>
+                <field id="speakable_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Speakable Schema</label>
+                    <comment>Emit Speakable structured data marking page sections for voice/audio assistants. Off by default.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="speakable_css_selectors" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Speakable CSS Selectors</label>
+                    <comment>One CSS selector per line identifying content suitable for text-to-speech.</comment>
+                    <depends><field id="speakable_enabled">1</field></depends>
+                </field>
+            </group>
         </section>
 
         <section id="mageos_seo_merchant" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">

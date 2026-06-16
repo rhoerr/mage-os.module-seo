@@ -31,6 +31,12 @@
                 <language_only_enabled>1</language_only_enabled>
                 <sitemap_enabled>1</sitemap_enabled>
             </hreflang>
+            <aeo>
+                <speakable_enabled>0</speakable_enabled>
+                <speakable_css_selectors>.page-title
+.product.attribute.overview
+.category-description</speakable_css_selectors>
+            </aeo>
         </mageos_seo_general>
         <mageos_seo_merchant>
             <condition>
