@@ -9,6 +9,22 @@
     <preference for="MageOS\Seo\Api\OrganisationRepositoryInterface"
                 type="MageOS\Seo\Model\OrganisationRepository"/>
 
+    <preference for="MageOS\Seo\Api\FaqCollectorInterface"
+                type="MageOS\Seo\Model\Faq\Collector"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         FAQ SOURCE POOL — bridges add sources (product-attribute, 3rd-party) here
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\Faq\SourcePool">
+        <arguments>
+            <argument name="sources" xsi:type="array">
+                <item name="table"
+                      xsi:type="object">MageOS\Seo\Model\Faq\Source\TableFaqSource</item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- ═══════════════════════════════════════════════════════════════════
          STRUCTURED DATA COMPOSITOR — built-in providers
          ═══════════════════════════════════════════════════════════════════ -->
@@ -180,6 +196,8 @@
     <type name="MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder">
         <arguments>
             <argument name="sectionProviders" xsi:type="array">
+                <item name="faq"
+                      xsi:type="object">MageOS\Seo\Model\LlmsTxt\FaqLlmsSectionProvider</item>
                 <!--
                     Bridge modules register their section providers here.
                     Example (from MageOS_SellersSeo/etc/di.xml):

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Integration;
 
 use Magento\TestFramework\Helper\Bootstrap;
+use MageOS\Seo\Api\FaqCollectorInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
+use MageOS\Seo\Model\Faq\SourcePool as FaqSourcePool;
 use MageOS\Seo\Model\Hreflang\ResolverPool as HreflangResolverPool;
 use MageOS\Seo\Model\Hreflang\SitemapGenerator as HreflangSitemapGenerator;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
@@ -91,5 +93,17 @@ class DiWiringTest extends TestCase
     {
         $instance = Bootstrap::getObjectManager()->get(HreflangSitemapGenerator::class);
         $this->assertInstanceOf(HreflangSitemapGenerator::class, $instance);
+    }
+
+    public function testFaqSourcePoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(FaqSourcePool::class);
+        $this->assertInstanceOf(FaqSourcePool::class, $instance);
+    }
+
+    public function testFaqCollectorIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(FaqCollectorInterface::class);
+        $this->assertInstanceOf(FaqCollectorInterface::class, $instance);
     }
 }

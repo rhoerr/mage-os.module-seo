@@ -1,0 +1,23 @@
+<?php
+/**
+ * FAQ group accordion. Theme-agnostic, no JS (native <details>/<summary>).
+ *
+ * Cache safety: fully cacheable. Calling getFaqs() registers the group with the FAQ collector so the
+ * late FaqJsonLd block emits matching structured data.
+ *
+ * @var \MageOS\Seo\Block\AbstractFaqElement $block
+ */
+
+$faqs = $block->getFaqs();
+if (empty($faqs)) {
+    return;
+}
+?>
+<div class="mageos-seo-faq">
+<?php foreach ($faqs as $faq): ?>
+    <details class="mageos-seo-faq__item">
+        <summary class="mageos-seo-faq__question"><?= $block->escapeHtml($faq['question']) ?></summary>
+        <div class="mageos-seo-faq__answer"><?= $block->escapeHtml($faq['answer']) ?></div>
+    </details>
+<?php endforeach; ?>
+</div>

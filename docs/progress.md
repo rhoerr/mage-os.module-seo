@@ -159,16 +159,35 @@ DI smoke tests added in `DiWiringTest`.
 - Tests: `OrganizationProviderTest` extended (populated/empty/geo-needs-both cases).
 - ⏳ DEFERRED: `openingHoursSpecification` (needs a dynamic-rows admin UI) — own follow-up.
 
-### 3c — FAQ subsystem ⏳
-- Data + source pool + collector + renderer + schema (head/late) + widget + native PB content type +
-  admin UI. See `planned-features/faq.md`. Not started.
+### 3c — FAQ subsystem 🟡 (engine done; rendering surface + admin + PB pending)
 
-## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a + 3b)
+**3c-1 engine ✅** — `mage-os_seo_faq` table (identifier, store_id, question, answer, sort_order,
+is_active) + whitelist; `Model/Faq/Repository` (raw-connection read by identifier, store 0 + store
+fallback, ordered); `Api/FaqSourceProviderInterface` + `Model/Faq/Source/TableFaqSource` +
+`Model/Faq/SourcePool` (collect-all extension point); `Api/FaqCollectorInterface` +
+`Model/Faq/Collector` (request-scoped, dedup, stores **identifiers** for block-cache-immune
+re-resolution). di.xml: collector preference + source pool. Tests: Repository, SourcePool, Collector,
+TableFaqSource + 2 DI smoke tests.
+
+**3c-2 surface ✅** — `Block/AbstractFaqElement` (resolve via source pool → register identifier with
+collector → expose to template) + `Block/Widget/FaqList` (`etc/widget.xml`, `ttl`-cacheable) +
+`faq/list.phtml` (`<details>`/`<summary>`, no JS, theme-agnostic). Late `Block/FaqJsonLd` in
+`before.body.end` re-resolves collected identifiers → one deduped FAQPage (gated on structured-data
+config; CSP-nonce template). `FaqLlmsSectionProvider` injects the `global` FAQ group into
+/llms.txt + /llms-full.txt (registered in LlmsTxtBuilder). Tests: `FaqJsonLdTest`, `FaqListTest`
+(resolve/collect/memoise), `FaqLlmsSectionProviderTest`. Single-node emission (head-seeding can be
+layered later). Verify-in-CI/Hyvä: `before.body.end` container renders.
+
+**3c-3 ⏳** — admin grid/form CRUD (Faq model/resource/collection + save+delete repository, UI
+components, ACL, menu) + native Page Builder content type. FAQs are currently creatable via the
+table / data fixtures until the admin grid lands.
+
+## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a + 3b + 3c-1 + 3c-2)
 
 | Gate | Result |
 |------|--------|
 | php -l | ✅ |
-| PHPUnit unit | ✅ 350 tests / 582 assertions |
+| PHPUnit unit | ✅ 374 tests / 620 assertions |
 | phpcs | ✅ 0 |
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |
