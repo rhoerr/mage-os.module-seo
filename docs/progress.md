@@ -292,4 +292,4 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 | PHPStan | ✅ 0 |
 | XML well-formed | ✅ |
 | Infection MSI ≥ 75 | CI (tests mutation-first) |
-| Integration + di:compile | CI (Phases 0–3 confirmed; 4a/4b/4c pending CI) |
+| Integration + di:compile | ✅ CI-confirmed (Phases 0–4 all green) |
