@@ -53,6 +53,16 @@ class AbstractFaqElement extends Template
     }
 
     /**
+     * Optional heading rendered above the FAQ list.
+     *
+     * @return string
+     */
+    public function getHeading(): string
+    {
+        return trim((string) $this->getData('heading'));
+    }
+
+    /**
      * Resolve the FAQ entries for this element and register the identifier for schema parity.
      *
      * @return array<int, array{question: string, answer: string}>

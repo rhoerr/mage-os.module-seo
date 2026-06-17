@@ -12,8 +12,12 @@ $faqs = $block->getFaqs();
 if (empty($faqs)) {
     return;
 }
+$heading = $block->getHeading();
 ?>
 <div class="mageos-seo-faq">
+<?php if ($heading !== ''): ?>
+    <h2 class="mageos-seo-faq__heading"><?= $block->escapeHtml($heading) ?></h2>
+<?php endif; ?>
 <?php foreach ($faqs as $faq): ?>
     <details class="mageos-seo-faq__item">
         <summary class="mageos-seo-faq__question"><?= $block->escapeHtml($faq['question']) ?></summary>

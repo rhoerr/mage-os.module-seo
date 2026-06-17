@@ -131,7 +131,7 @@ DI smoke tests added in `DiWiringTest`.
 | Infection MSI ≥ 75 | CI (tests written mutation-first) |
 | Integration + di:compile | CI |
 
-## Phase 3 — AEO content + identity 🟡 (3a done; LocalBusiness + FAQ pending)
+## Phase 3 — AEO content + identity ✅
 
 ### 3a — Article / Event / Speakable ✅
 - `Api/ArticleDataProviderInterface` + `Api/EventDataProviderInterface` (bridge-fed pools, empty by
@@ -191,10 +191,21 @@ di.xml; `Ui/Component/Listing/Column/FaqActions` for edit/delete. Form UI compon
 (`mageos_seo_faq_form`) + `Ui/DataProvider/Faq/FormDataProvider` (data-persistor fallback) + Add/Back/
 Save/Delete button blocks. Layouts `rs_seo_faq_index|edit`. FAQs now fully manageable in admin.
 
-**3c-3c ⏳** — native Page Builder content type (optional polish; FAQ widget already works in PB via
-the CMS Widget content type when the widget bridge is present).
+**3c-3c native Page Builder content type ✅** — `view/adminhtml/pagebuilder/content_type/mageos_seo_faq.xml`
+(menu_section `mageos_seo`) + edit form (`pagebuilder_mageos_seo_faq_form` extending
+`pagebuilder_base_form`: identifier + optional heading) + form layout + master/preview Knockout
+templates. **Server-side render** via `Plugin/PageBuilder/FaqRenderer` on
+`Magento\Framework\Filter\Template::filter()` (the proven pattern from Reessolutions' category_grid):
+finds the `data-content-type="mageos_seo_faq"` placeholder, decodes `data-identifier`/`data-heading`,
+and renders the **existing `FaqList` widget** — so the collector, renderer and FAQPage schema parity
+are all reused, with **no hard dependency on Magento_PageBuilder** (plugin no-ops when no placeholder
+is present; content-type XML is inert without PB). Added `heading` support to `AbstractFaqElement` +
+`list.phtml` + the widget. `module.xml` sequences Magento_Widget + Magento_PageBuilder.
 
-## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a + 3b + 3c-1 + 3c-2)
+**FAQ subsystem (3c) COMPLETE** — engine, widget, late FAQPage schema, llms section, admin CRUD, and
+native PB content type. PB/JS/Knockout + the Filter\Template render plugin are CI/manual-validated.
+
+## Gate status (local, latest run — Phases 0–3 complete)
 
 | Gate | Result |
 |------|--------|
