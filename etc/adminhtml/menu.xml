@@ -17,6 +17,14 @@
              action="rs_seo/organisation/edit"
              resource="MageOS_Seo::organisation"/>
 
+        <add id="MageOS_Seo::faq"
+             title="FAQ Manager"
+             module="MageOS_Seo"
+             sortOrder="15"
+             parent="MageOS_Seo::seo"
+             action="rs_seo/faq/index"
+             resource="MageOS_Seo::faq"/>
+
         <add id="MageOS_Seo::config_link"
              title="Configuration"
              module="MageOS_Seo"

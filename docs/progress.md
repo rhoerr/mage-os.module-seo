@@ -178,9 +178,21 @@ config; CSP-nonce template). `FaqLlmsSectionProvider` injects the `global` FAQ g
 (resolve/collect/memoise), `FaqLlmsSectionProviderTest`. Single-node emission (head-seeding can be
 layered later). Verify-in-CI/Hyvä: `before.body.end` container renders.
 
-**3c-3 ⏳** — admin grid/form CRUD (Faq model/resource/collection + save+delete repository, UI
-components, ACL, menu) + native Page Builder content type. FAQs are currently creatable via the
-table / data fixtures until the admin grid lands.
+**3c-3a CRUD data layer ✅** — `Api/Data/FaqInterface` (field accessors; entity_id via AbstractModel,
+no typed setEntityId to stay compatible) + `Model/Faq` (AbstractModel) + `Model/ResourceModel/Faq`
++ `Collection` + `Api/FaqRepositoryInterface` + `Model/FaqRepository` (getById/save/delete/deleteById,
+`instanceof AbstractModel` guard like OrganisationRepository). di.xml preference. Integration test
+`Test/Integration/Model/FaqRepositoryTest` (CRUD round-trip + read-by-identifier, CI-run).
+
+**3c-3b admin grid/form ✅** — ACL `MageOS_Seo::faq` + menu (Marketing → SEO → FAQ Manager).
+Controllers `Adminhtml/Faq/{Index,NewAction,Edit,Save,Delete}` (admin frontName `rs_seo`). Listing UI
+component (`mageos_seo_faq_listing`) with grid collection virtualType + CollectionFactory mapping in
+di.xml; `Ui/Component/Listing/Column/FaqActions` for edit/delete. Form UI component
+(`mageos_seo_faq_form`) + `Ui/DataProvider/Faq/FormDataProvider` (data-persistor fallback) + Add/Back/
+Save/Delete button blocks. Layouts `rs_seo_faq_index|edit`. FAQs now fully manageable in admin.
+
+**3c-3c ⏳** — native Page Builder content type (optional polish; FAQ widget already works in PB via
+the CMS Widget content type when the widget bridge is present).
 
 ## Gate status (local, latest run — Phase 0 + 1 + 2 + 3a + 3b + 3c-1 + 3c-2)
 

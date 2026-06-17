@@ -12,6 +12,9 @@
     <preference for="MageOS\Seo\Api\FaqCollectorInterface"
                 type="MageOS\Seo\Model\Faq\Collector"/>
 
+    <preference for="MageOS\Seo\Api\FaqRepositoryInterface"
+                type="MageOS\Seo\Model\FaqRepository"/>
+
     <!-- ═══════════════════════════════════════════════════════════════════
          FAQ SOURCE POOL — bridges add sources (product-attribute, 3rd-party) here
          ═══════════════════════════════════════════════════════════════════ -->
@@ -21,6 +24,25 @@
             <argument name="sources" xsi:type="array">
                 <item name="table"
                       xsi:type="object">MageOS\Seo\Model\Faq\Source\TableFaqSource</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- FAQ admin grid: collection for the listing UI component data source -->
+    <virtualType name="MageOS\Seo\Model\ResourceModel\Faq\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">mage-os_seo_faq</argument>
+            <argument name="resourceModel" xsi:type="string">MageOS\Seo\Model\ResourceModel\Faq</argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="mageos_seo_faq_listing_data_source" xsi:type="string">
+                    MageOS\Seo\Model\ResourceModel\Faq\Grid\Collection
+                </item>
             </argument>
         </arguments>
     </type>

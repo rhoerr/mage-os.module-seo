@@ -6,6 +6,7 @@
             <resource id="Magento_Backend::admin">
                 <resource id="MageOS_Seo::seo" title="SEO" sortOrder="80">
                     <resource id="MageOS_Seo::organisation" title="Organisation Settings" sortOrder="10"/>
+                    <resource id="MageOS_Seo::faq" title="FAQ Manager" sortOrder="15"/>
                     <resource id="MageOS_Seo::config" title="SEO Configuration" sortOrder="20"/>
                 </resource>
             </resource>
