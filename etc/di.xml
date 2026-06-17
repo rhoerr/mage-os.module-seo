@@ -215,6 +215,19 @@
          SellersSeo registers VendorSectionProvider here via its own di.xml.
          ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- llms.jsonl line providers — bridge modules append catalog lines (e.g. vendor LocalBusiness) -->
+    <type name="MageOS\Seo\Model\LlmsJsonl\JsonlBuilder">
+        <arguments>
+            <argument name="lineProviders" xsi:type="array">
+                <!--
+                    Bridge example (from a marketplace module's di.xml):
+                    <item name="vendors"
+                          xsi:type="object">YourVendor\Module\Model\LlmsJsonl\VendorLineProvider</item>
+                -->
+            </argument>
+        </arguments>
+    </type>
+
     <type name="MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder">
         <arguments>
             <argument name="sectionProviders" xsi:type="array">
@@ -304,6 +317,13 @@
          PLUGINS
          ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- AI crawler directives appended to robots.txt -->
+    <type name="Magento\Robots\Model\Robots">
+        <plugin name="rs_seo_ai_robots_directives"
+                type="MageOS\Seo\Plugin\Robots\AppendAiDirectivesPlugin"
+                sortOrder="10"/>
+    </type>
+
     <!-- Category SEO tab persistence -->
     <type name="Magento\Catalog\Api\CategoryRepositoryInterface">
         <plugin name="rs_seo_category_save_seo_config"
@@ -355,5 +375,29 @@
     <!--<type name="MageOS\Seo\Model\Product\SchemaRegistry">
         <arguments/>
     </type>-->
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         WELL-KNOWN ENDPOINT REGISTRY (GEO / agentic discovery)
+         Bridge modules add /.well-known/* documents by appending to this pool
+         from their own di.xml — no edit to MageOS_Seo required.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <type name="MageOS\Seo\Model\WellKnown\EndpointPool">
+        <arguments>
+            <argument name="endpoints" xsi:type="array">
+                <item name="ucp" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\UcpEndpoint</item>
+                <item name="ai-plugin.json" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\AiPluginEndpoint</item>
+                <item name="security.txt" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\SecurityTxtEndpoint</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Register the UCP keygen CLI command -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="mageos_seo_ucp_keygen" xsi:type="object">MageOS\Seo\Console\Command\UcpKeygenCommand</item>
+            </argument>
+        </arguments>
+    </type>
 
 </config>

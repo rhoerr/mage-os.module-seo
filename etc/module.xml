@@ -8,6 +8,7 @@
             <module name="Magento_Cms"/>
             <module name="Magento_Widget"/>
             <module name="Magento_PageBuilder"/>
+            <module name="Magento_Robots"/>
         </sequence>
     </module>
 </config>

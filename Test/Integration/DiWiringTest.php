@@ -10,6 +10,7 @@ use MageOS\Seo\Api\OrganisationRepositoryInterface;
 use MageOS\Seo\Model\Faq\SourcePool as FaqSourcePool;
 use MageOS\Seo\Model\Hreflang\ResolverPool as HreflangResolverPool;
 use MageOS\Seo\Model\Hreflang\SitemapGenerator as HreflangSitemapGenerator;
+use MageOS\Seo\Model\LlmsJsonl\JsonlBuilder;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
 use MageOS\Seo\Model\MetaTag\Compositor as MetaTagCompositor;
 use MageOS\Seo\Model\PageTitle\Compositor as PageTitleCompositor;
@@ -18,6 +19,7 @@ use MageOS\Seo\Model\Product\SchemaBuilderPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Model\RobotsMeta\Resolver as RobotsMetaResolver;
 use MageOS\Seo\Model\StructuredData\Compositor as StructuredDataCompositor;
+use MageOS\Seo\Model\WellKnown\EndpointPool as WellKnownEndpointPool;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -105,5 +107,20 @@ class DiWiringTest extends TestCase
     {
         $instance = Bootstrap::getObjectManager()->get(FaqCollectorInterface::class);
         $this->assertInstanceOf(FaqCollectorInterface::class, $instance);
+    }
+
+    public function testLlmsJsonlBuilderIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(JsonlBuilder::class);
+        $this->assertInstanceOf(JsonlBuilder::class, $instance);
+    }
+
+    public function testWellKnownEndpointPoolIsWiredWithBuiltinEndpoints(): void
+    {
+        /** @var WellKnownEndpointPool $pool */
+        $pool = Bootstrap::getObjectManager()->get(WellKnownEndpointPool::class);
+        $this->assertTrue($pool->has('ucp'));
+        $this->assertTrue($pool->has('ai-plugin.json'));
+        $this->assertTrue($pool->has('security.txt'));
     }
 }

@@ -23,6 +23,11 @@
                     <item name="disable"   xsi:type="boolean">false</item>
                     <item name="sortOrder" xsi:type="string">21</item>
                 </item>
+                <item name="rs_seo_wellknown" xsi:type="array">
+                    <item name="class"     xsi:type="string">MageOS\Seo\Model\Router\WellKnownRouter</item>
+                    <item name="disable"   xsi:type="boolean">false</item>
+                    <item name="sortOrder" xsi:type="string">19</item>
+                </item>
             </argument>
         </arguments>
     </type>

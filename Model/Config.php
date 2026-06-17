@@ -19,6 +19,7 @@ class Config
     public const XML_SD_AGGREGATE_RATING_ENABLED   = 'mageos_seo_general/structured_data/aggregate_rating_enabled';
     public const XML_LLMS_ENABLED                  = 'mageos_seo_general/llms_txt/enabled';
     public const XML_LLMS_FULL_ENABLED             = 'mageos_seo_general/llms_txt/full_enabled';
+    public const XML_LLMS_JSONL_ENABLED            = 'mageos_seo_general/llms_txt/jsonl_enabled';
     public const XML_ROBOTS_PRODUCT_DEFAULT        = 'mageos_seo_general/robots_meta/product_default';
     public const XML_ROBOTS_CATEGORY_DEFAULT       = 'mageos_seo_general/robots_meta/category_default';
     public const XML_ROBOTS_CMS_DEFAULT            = 'mageos_seo_general/robots_meta/cms_page_default';
@@ -31,6 +32,8 @@ class Config
     public const XML_HREFLANG_SITEMAP_ENABLED      = 'mageos_seo_general/hreflang/sitemap_enabled';
     public const XML_AEO_SPEAKABLE_ENABLED         = 'mageos_seo_general/aeo/speakable_enabled';
     public const XML_AEO_SPEAKABLE_SELECTORS       = 'mageos_seo_general/aeo/speakable_css_selectors';
+    public const XML_AI_ROBOTS_ENABLED             = 'mageos_seo_general/ai_robots/enabled';
+    public const XML_AI_ROBOTS_DISALLOWED          = 'mageos_seo_general/ai_robots/disallowed';
 
     /**
      * Initialize Config with scope configuration.
@@ -187,6 +190,21 @@ class Config
     {
         return (bool) $this->scopeConfig->getValue(
             self::XML_LLMS_FULL_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check if the /llms.jsonl product catalog endpoint is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isLlmsJsonlEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_LLMS_JSONL_ENABLED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
@@ -363,5 +381,30 @@ class Config
         }
 
         return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw) ?: [])));
+    }
+
+    /**
+     * Check if AI-crawler directives are appended to robots.txt.
+     *
+     * @return bool
+     */
+    public function isAiRobotsEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_AI_ROBOTS_ENABLED, ScopeInterface::SCOPE_STORE);
+    }
+
+    /**
+     * Return the AI user-agents to disallow in robots.txt.
+     *
+     * @return string[]
+     */
+    public function getAiDisallowedBots(): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(self::XML_AI_ROBOTS_DISALLOWED, ScopeInterface::SCOPE_STORE);
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
     }
 }

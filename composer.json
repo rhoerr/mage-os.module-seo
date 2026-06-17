@@ -9,7 +9,8 @@
         "magento/framework": "*",
         "magento/module-catalog": "*",
         "magento/module-store": "*",
-        "magento/module-cms": "*"
+        "magento/module-cms": "*",
+        "magento/module-robots": "*"
     },
     "require-dev": {
         "bitexpert/phpstan-magento": "^0.42",

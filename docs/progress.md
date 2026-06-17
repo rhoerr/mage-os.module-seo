@@ -218,6 +218,78 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 | Infection MSI ≥ 75 | CI (Phases 0–2 confirmed green in CI; tests written mutation-first) |
 | Integration + di:compile | CI (Phases 0–2 confirmed green in CI) |
 
-## Phase 4
+## Phase 4 — GEO ✅ (llms.jsonl + AI-bot robots + UCP/well-known done)
 
-⏳ Not started. See [`planned-features/_roadmap.md`](planned-features/_roadmap.md).
+### 4a — /llms.jsonl ✅
+- `Api/JsonlLineProviderInterface` (bridge pool for extra catalog lines) + `Model/LlmsJsonl/ProductLineBuilder`
+  (compact JSON-LD Product node per product) + `Model/LlmsJsonl/JsonlBuilder` (enabled-product
+  collection → NDJSON; appends provider lines). `Controller/Llmsjsonl/Index` (404 when disabled;
+  `Content-Type: application/x-ndjson`; `X-Magento-Tags: RS_LLMS_JSONL`). Clean URL `/llms.jsonl` via
+  the existing `LlmsTxtRouter` (added route). `Config::isLlmsJsonlEnabled()` + `llms_txt/jsonl_enabled`
+  (off by default) config/admin field. **Dedicated** `Observer/InvalidateLlmsJsonlCache` on
+  `catalog_product_save_after` (purges only `RS_LLMS_JSONL` — does NOT over-purge RS_LLMS/RS_LLMS_FULL).
+  di.xml line-provider pool. Tests: `ProductLineBuilderTest` + DI smoke (JsonlBuilder is factory-based →
+  integration/CI-validated, like the other repositories).
+
+### 4b — AI-bot robots.txt directives ✅
+- `Model/Config/Source/AiBots` — 14 known AI crawler user-agents (GPTBot, ChatGPT-User, OAI-SearchBot,
+  ClaudeBot, anthropic-ai, PerplexityBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent,
+  Amazonbot, cohere-ai, Diffbot, CCBot, Bytespider); value = literal robots.txt User-agent token.
+- `Plugin/Robots/AppendAiDirectivesPlugin` — `afterGetData` on `Magento\Robots\Model\Robots` appends a
+  `# AI crawlers (managed by MageOS_Seo)` block with a per-bot `Allow: /` or `Disallow: /` rule (disallow
+  set = config list). Directive-building logic lives in public `buildAiDirectives()` (unit-testable
+  without the Robots subject); `afterGetData` is a thin wrapper that returns `$result` unchanged when the
+  block is empty (disabled). **Disabled by default** → store robots.txt unchanged out of the box.
+- Config: `ai_robots/enabled` (0) + `ai_robots/disallowed` (CCBot,Bytespider) → `Config::isAiRobotsEnabled()`,
+  `Config::getAiDisallowedBots()` (CSV → trimmed string[]). `system.xml` `ai_robots` group (showInDefault).
+- `composer.json` now requires `magento/module-robots` (we sequence it in `module.xml` and plug onto its
+  `Robots` model); di.xml plugin `rs_seo_ai_robots_directives` sortOrder 10.
+- Tests: `AiBotsTest` (major agents present, value/label non-empty, unique), `AppendAiDirectivesPluginTest`
+  (disabled → empty + no config read; disallow vs allow split; empty list → all-allow; `afterGetData`
+  passthrough when disabled and append-with-spacing when enabled).
+
+### 4c — /.well-known/ucp + ai-plugin.json + security.txt ✅
+- **Registry extension point:** `Api/WellKnownEndpointInterface` (getName/isEnabled/getContentType/
+  getCacheControl/render) + `Model/WellKnown/EndpointPool` (keyed by path segment). A bridge module
+  serves a new `/.well-known/*` document by appending to the pool from its own di.xml — no edit here.
+- `Model/Router/WellKnownRouter` (RouterList sortOrder 19) matches `/.well-known/{name}`, checks the
+  pool, forwards to the single dispatcher `Controller/Wellknown/Index` (param `endpoint`). Unknown/
+  disabled → 404; render `LocalizedException` → 500 (logged). Loop-guarded on module name like
+  LlmsTxtRouter.
+- Built-in endpoints (`Model/WellKnown/Endpoint/{Ucp,AiPlugin,SecurityTxt}Endpoint`) wrap builders:
+  - `Model/Ucp/ProfileBuilder` — UCP manifest (spec 2026-04-08); capabilities from config toggles
+    nested under `dev.ucp.shopping` + merged `CapabilityPool` providers; `signing_keys` only when a
+    public JWK exists. **Security: refuses to emit a JWK containing `d` (private key) — throws.**
+  - `Model/Ucp/AiPluginBuilder` — ai-plugin.json (name sanitised to model-safe slug, description
+    truncated to 200, OpenAPI url → Magento REST schema, contact from trans_email support identity).
+  - `Model/Ucp/SecurityTxtBuilder` — RFC 9116 (Contact normalised to mailto:, Expires, Policy,
+    Preferred-Languages).
+- `Api/UcpCapabilityProviderInterface` + `Model/Ucp/CapabilityPool` (collect-all, empty by default) —
+  Phase 2 endpoint modules declare live capabilities via di.xml.
+- `Console/Command/UcpKeygenCommand` (`mageos:seo:ucp:keygen --website=N`) — generates ECDSA P-256
+  keypair, stores private PEM **encrypted** (EncryptorInterface + config writer, website/default scope),
+  stores + prints the public JWK (x/y, never `d`).
+- `Model/Ucp/UcpConfig` — all UCP config getters (website-scoped, read at store scope for hierarchy
+  resolution); merchant id auto-derived (reverse domain) when blank. config.xml `mageos_seo_ucp`
+  (all OFF by default), system.xml `mageos_seo_ucp` section (general/capabilities/signing/ai_plugin/
+  security_txt). di.xml endpoint pool + CommandList registration. composer.json already requires
+  magento/module-robots (4b).
+- Tests: ProfileBuilder (minimal/capabilities/pool-merge/JWK-include/**leak-throws**/invalid-json),
+  AiPlugin (slug/truncate/fallback), SecurityTxt (mailto/qualified-uri/omit-blank), UcpConfig
+  (derive/configured/fallback/flags), CapabilityPool, EndpointPool, Endpoint wrappers, WellKnownRouter
+  (non-match/unregistered/loop-guard/forward), Keygen (**no `d` in stored JWK**/encrypted/scope). The
+  thin dispatcher controller is covered by CI integration + a DiWiringTest pool-wiring smoke (factory-
+  based, no unit test — codebase convention). 420 unit tests / 806 assertions.
+
+## Gate status (local, latest run — Phases 0–4 complete)
+
+| Gate | Result |
+|------|--------|
+| php -l | ✅ |
+| PHPUnit unit | ✅ 420 tests / 806 assertions |
+| phpcs | ✅ 0 |
+| php-cs-fixer | ✅ 0 |
+| PHPStan | ✅ 0 |
+| XML well-formed | ✅ |
+| Infection MSI ≥ 75 | CI (tests mutation-first) |
+| Integration + di:compile | CI (Phases 0–3 confirmed; 4a/4b/4c pending CI) |

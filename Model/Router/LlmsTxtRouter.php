@@ -20,6 +20,7 @@ class LlmsTxtRouter implements RouterInterface
     private const ROUTES = [
         'llms.txt'      => ['module' => 'rs-seo', 'controller' => 'llms',      'action' => 'index'],
         'llms-full.txt' => ['module' => 'rs-seo', 'controller' => 'llmsfull',  'action' => 'index'],
+        'llms.jsonl'    => ['module' => 'rs-seo', 'controller' => 'llmsjsonl', 'action' => 'index'],
     ];
 
     /**
