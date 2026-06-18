@@ -2,7 +2,7 @@
     "name": "mage-os/module-seo",
     "description": "SEO module: JSON-LD structured data, meta tags, canonical management, and AI discoverability",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "minimum-stability": "stable",
     "require": {
         "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
