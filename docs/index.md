@@ -21,6 +21,18 @@ The SEO module provides structured data (JSON-LD), Open Graph meta tags, canonic
 
 ---
 
+## Planned / roadmap
+
+Future SEO / AEO / GEO work is planned in [`planned-features/`](planned-features/). Start with the
+master roadmap, which orders the phases and states the provider-pool architecture every feature
+follows:
+
+- [SEO / AEO / GEO Roadmap](planned-features/_roadmap.md) — phases, dependencies, quality gates.
+- [Provider Pool Architecture](planned-features/architecture-provider-pools.md) — the universal
+  extension pattern used by all planned features.
+
+---
+
 ## Quick setup checklist
 
 After installing and running `bin/magento setup:upgrade`:

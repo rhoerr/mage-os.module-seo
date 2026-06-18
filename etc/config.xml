@@ -13,15 +13,68 @@
                 <category_item_list_max>36</category_item_list_max>
                 <has_variant_max>50</has_variant_max>
                 <price_valid_until_months>12</price_valid_until_months>
+                <aggregate_rating_enabled>1</aggregate_rating_enabled>
             </structured_data>
             <llms_txt>
                 <enabled>1</enabled>
                 <full_enabled>1</full_enabled>
+                <jsonl_enabled>0</jsonl_enabled>
             </llms_txt>
             <robots_meta>
                 <product_default>INDEX,FOLLOW</product_default>
                 <category_default>INDEX,FOLLOW</category_default>
+                <cms_page_default>INDEX,FOLLOW</cms_page_default>
+                <paginated_enabled>0</paginated_enabled>
+                <paginated_robots>NOINDEX,FOLLOW</paginated_robots>
             </robots_meta>
+            <hreflang>
+                <enabled>1</enabled>
+                <language_only_enabled>1</language_only_enabled>
+                <sitemap_enabled>1</sitemap_enabled>
+            </hreflang>
+            <aeo>
+                <speakable_enabled>0</speakable_enabled>
+                <speakable_css_selectors>.page-title
+.product.attribute.overview
+.category-description</speakable_css_selectors>
+            </aeo>
+            <ai_robots>
+                <enabled>0</enabled>
+                <disallowed>CCBot,Bytespider</disallowed>
+            </ai_robots>
         </mageos_seo_general>
+        <mageos_seo_merchant>
+            <condition>
+                <default_condition>https://schema.org/NewCondition</default_condition>
+            </condition>
+            <return>
+                <enabled>0</enabled>
+                <policy_category>https://schema.org/MerchantReturnFiniteReturnWindow</policy_category>
+                <days>30</days>
+                <fees>https://schema.org/FreeReturn</fees>
+                <refund_type>https://schema.org/FullRefund</refund_type>
+            </return>
+            <shipping>
+                <enabled>0</enabled>
+            </shipping>
+        </mageos_seo_merchant>
+        <mageos_seo_ucp>
+            <general>
+                <enabled>0</enabled>
+            </general>
+            <capabilities>
+                <catalog>0</catalog>
+                <cart>0</cart>
+                <checkout>0</checkout>
+                <identity_linking>0</identity_linking>
+                <order_management>0</order_management>
+            </capabilities>
+            <ai_plugin>
+                <enabled>0</enabled>
+            </ai_plugin>
+            <security_txt>
+                <enabled>0</enabled>
+            </security_txt>
+        </mageos_seo_ucp>
     </default>
 </config>

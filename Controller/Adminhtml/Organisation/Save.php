@@ -120,6 +120,21 @@ class Save extends Action
             }
             $org->setContactPoint($contact);
 
+            // LocalBusiness presence fields
+            $localKeys = [
+                'street_address', 'address_locality', 'address_region', 'postal_code',
+                'address_country', 'telephone', 'email', 'latitude', 'longitude', 'price_range',
+            ];
+            $localData = [];
+            foreach ($localKeys as $key) {
+                if (isset($data[$key])) {
+                    $localData[$key] = (string) $data[$key];
+                }
+            }
+            if ($localData !== []) {
+                $org->setLocalPresence($localData);
+            }
+
             $this->organisationRepository->save($org);
             $savedEntityId = (int) ($org->getEntityId());
             $this->cacheTypeList->invalidate(['full_page', 'config']);

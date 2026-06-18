@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MageOS\Seo\Observer;
+
+use Magento\Framework\Event\Observer;
+use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\View\Page\Config as PageConfig;
+use Magento\Store\Model\StoreManagerInterface;
+use MageOS\Seo\Model\RobotsMeta\Resolver;
+
+/**
+ * Single applier for the robots meta pool.
+ *
+ * Runs once per frontend page on layout_generate_blocks_after — after the controller has populated
+ * the registry/layer and before the head is rendered — so any page type with a matching provider is
+ * covered automatically, with no per-controller plugin. When no provider has an opinion the page
+ * keeps Magento's default robots behaviour.
+ */
+class ApplyRobotsMeta implements ObserverInterface
+{
+    /**
+     * @param Resolver $resolver
+     * @param PageConfig $pageConfig
+     * @param StoreManagerInterface $storeManager
+     */
+    public function __construct(
+        private readonly Resolver              $resolver,
+        private readonly PageConfig            $pageConfig,
+        private readonly StoreManagerInterface $storeManager
+    ) {
+    }
+
+    /**
+     * Apply the resolved robots meta value to the current frontend page.
+     *
+     * @param Observer $observer
+     * @return void
+     */
+    public function execute(Observer $observer): void
+    {
+        try {
+            $storeId = (int) $this->storeManager->getStore()->getId();
+            $robots  = $this->resolver->resolve($storeId);
+            if ($robots !== null && $robots !== '') {
+                $this->pageConfig->setRobots($robots);
+            }
+        } catch (\Exception) { // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch -- never break rendering
+        }
+    }
+}

@@ -19,10 +19,28 @@ class RobotsMetaTest extends TestCase
         $this->source = new RobotsMeta();
     }
 
-    public function testToOptionArrayReturnsFourOptions(): void
+    public function testToOptionArrayReturnsAllOptions(): void
     {
         $options = $this->source->toOptionArray();
-        $this->assertCount(4, $options);
+        $this->assertCount(7, $options);
+    }
+
+    public function testIncludesRichPreviewDirective(): void
+    {
+        $values = array_column($this->source->toOptionArray(), 'value');
+        $this->assertContains('INDEX,FOLLOW,max-image-preview:large,max-snippet:-1', $values);
+    }
+
+    public function testIncludesNoarchiveDirective(): void
+    {
+        $values = array_column($this->source->toOptionArray(), 'value');
+        $this->assertContains('NOINDEX,FOLLOW,noarchive', $values);
+    }
+
+    public function testIncludesAiBlockingDirective(): void
+    {
+        $values = array_column($this->source->toOptionArray(), 'value');
+        $this->assertContains('NOINDEX,NOFOLLOW,noai,noimageai', $values);
     }
 
     public function testEachOptionHasValueAndLabelKeys(): void

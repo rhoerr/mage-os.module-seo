@@ -13,6 +13,11 @@
                    name="rs_seo.canonical"
                    template="MageOS_Seo::seo/canonical.phtml"/>
 
+            <block class="MageOS\Seo\Block\Hreflang"
+                   name="rs_seo.hreflang"
+                   template="MageOS_Seo::seo/hreflang.phtml"
+                   after="rs_seo.canonical"/>
+
             <block class="MageOS\Seo\Block\JsonLd"
                    name="rs_seo.json_ld"
                    template="MageOS_Seo::seo/json-ld.phtml"/>
@@ -21,5 +26,16 @@
                    name="rs_seo.meta_tags"
                    template="MageOS_Seo::seo/meta-tags.phtml"/>
         </referenceBlock>
+
+        <!--
+            FAQ structured data renders at end of body so all visible FAQ elements (widgets, Page
+            Builder) have registered their groups with the collector. JSON-LD is valid anywhere in
+            the document.
+        -->
+        <referenceContainer name="before.body.end">
+            <block class="MageOS\Seo\Block\FaqJsonLd"
+                   name="rs_seo.faq_json_ld"
+                   template="MageOS_Seo::faq/json-ld.phtml"/>
+        </referenceContainer>
     </body>
 </page>

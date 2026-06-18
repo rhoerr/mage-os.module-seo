@@ -7,17 +7,26 @@ namespace MageOS\Seo\Model\StructuredData\Provider;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
+use MageOS\Seo\Model\StructuredData\OrganisationId;
 
 class OrganizationProvider implements StructuredDataProviderInterface
 {
     /**
+     * @var OrganisationId
+     */
+    private readonly OrganisationId $organisationId;
+
+    /**
      * @param OrganisationRepositoryInterface $organisationRepository
      * @param StoreManagerInterface $storeManager
+     * @param OrganisationId|null $organisationId
      */
     public function __construct(
         private readonly OrganisationRepositoryInterface $organisationRepository,
-        private readonly StoreManagerInterface           $storeManager
+        private readonly StoreManagerInterface           $storeManager,
+        ?OrganisationId $organisationId = null
     ) {
+        $this->organisationId = $organisationId ?? new OrganisationId($organisationRepository, $storeManager);
     }
 
     /**
@@ -42,7 +51,7 @@ class OrganizationProvider implements StructuredDataProviderInterface
         }
 
         $baseUrl = rtrim($org->getUrl(), '/');
-        $orgId   = $baseUrl . '/#organization';
+        $orgId   = $this->organisationId->fromUrl($org->getUrl());
 
         $orgSchema = [
             '@context' => 'https://schema.org',
@@ -84,6 +93,9 @@ class OrganizationProvider implements StructuredDataProviderInterface
             );
         }
 
+        // LocalBusiness presence fields (emitted when populated; @type comes from org_type).
+        $orgSchema = $this->addLocalPresence($orgSchema, $org);
+
         // WebSite with SearchAction
         $websiteSchema = [
             '@context'        => 'https://schema.org',
@@ -103,5 +115,55 @@ class OrganizationProvider implements StructuredDataProviderInterface
         ];
 
         return [$orgSchema, $websiteSchema];
+    }
+
+    /**
+     * Append LocalBusiness presence fields (address, geo, contact, price range) when populated.
+     *
+     * @param array<string,mixed> $orgSchema
+     * @param \MageOS\Seo\Api\Data\OrganisationInterface $org
+     * @return array<string, mixed>
+     */
+    private function addLocalPresence(array $orgSchema, \MageOS\Seo\Api\Data\OrganisationInterface $org): array
+    {
+        $address = array_filter($org->getAddress(), static fn (string $v): bool => $v !== '');
+        if ($address !== []) {
+            $postal = ['@type' => 'PostalAddress'];
+            $map = [
+                'streetAddress'   => 'street_address',
+                'addressLocality' => 'address_locality',
+                'addressRegion'   => 'address_region',
+                'postalCode'      => 'postal_code',
+                'addressCountry'  => 'address_country',
+            ];
+            foreach ($map as $schemaKey => $dataKey) {
+                if (!empty($address[$dataKey])) {
+                    $postal[$schemaKey] = $address[$dataKey];
+                }
+            }
+            $orgSchema['address'] = $postal;
+        }
+
+        $latitude  = $org->getLatitude();
+        $longitude = $org->getLongitude();
+        if ($latitude !== '' && $longitude !== '') {
+            $orgSchema['geo'] = [
+                '@type'     => 'GeoCoordinates',
+                'latitude'  => $latitude,
+                'longitude' => $longitude,
+            ];
+        }
+
+        if ($org->getTelephone() !== '') {
+            $orgSchema['telephone'] = $org->getTelephone();
+        }
+        if ($org->getEmail() !== '') {
+            $orgSchema['email'] = $org->getEmail();
+        }
+        if ($org->getPriceRange() !== '') {
+            $orgSchema['priceRange'] = $org->getPriceRange();
+        }
+
+        return $orgSchema;
     }
 }

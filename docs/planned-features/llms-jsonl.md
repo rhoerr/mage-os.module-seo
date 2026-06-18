@@ -1,5 +1,10 @@
 # Planned Feature: llms.jsonl Product Catalog Endpoint
 
+> **Roadmap note (Phase 4 — GEO):** already designed as a provider pool
+> (`JsonlLineProviderInterface`), so no architectural change needed — it follows
+> [architecture-provider-pools.md](architecture-provider-pools.md). Reuse the cacheable-endpoint
+> pattern (`Controller/Llms/Index` + `Observer/InvalidateLlmsTxtCache`). See [_roadmap.md](_roadmap.md).
+
 **Status:** Planned — not yet implemented  
 **Module:** `MageOS_Seo` (extends the existing llms.txt feature)  
 **Complexity:** Medium  

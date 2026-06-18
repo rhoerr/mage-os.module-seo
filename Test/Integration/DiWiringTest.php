@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Integration;
 
 use Magento\TestFramework\Helper\Bootstrap;
+use MageOS\Seo\Api\FaqCollectorInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
+use MageOS\Seo\Model\Faq\SourcePool as FaqSourcePool;
+use MageOS\Seo\Model\Hreflang\ResolverPool as HreflangResolverPool;
+use MageOS\Seo\Model\Hreflang\SitemapGenerator as HreflangSitemapGenerator;
+use MageOS\Seo\Model\LlmsJsonl\JsonlBuilder;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
 use MageOS\Seo\Model\MetaTag\Compositor as MetaTagCompositor;
 use MageOS\Seo\Model\PageTitle\Compositor as PageTitleCompositor;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Product\SchemaBuilderPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
+use MageOS\Seo\Model\RobotsMeta\Resolver as RobotsMetaResolver;
 use MageOS\Seo\Model\StructuredData\Compositor as StructuredDataCompositor;
+use MageOS\Seo\Model\WellKnown\EndpointPool as WellKnownEndpointPool;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -56,5 +65,62 @@ class DiWiringTest extends TestCase
     {
         $instance = Bootstrap::getObjectManager()->get(LlmsTxtBuilder::class);
         $this->assertInstanceOf(LlmsTxtBuilder::class, $instance);
+    }
+
+    public function testRobotsMetaResolverIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(RobotsMetaResolver::class);
+        $this->assertInstanceOf(RobotsMetaResolver::class, $instance);
+    }
+
+    public function testOfferEnricherPoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(OfferEnricherPool::class);
+        $this->assertInstanceOf(OfferEnricherPool::class, $instance);
+    }
+
+    public function testAggregateRatingResolverIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(AggregateRatingResolver::class);
+        $this->assertInstanceOf(AggregateRatingResolver::class, $instance);
+    }
+
+    public function testHreflangResolverPoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(HreflangResolverPool::class);
+        $this->assertInstanceOf(HreflangResolverPool::class, $instance);
+    }
+
+    public function testHreflangSitemapGeneratorIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(HreflangSitemapGenerator::class);
+        $this->assertInstanceOf(HreflangSitemapGenerator::class, $instance);
+    }
+
+    public function testFaqSourcePoolIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(FaqSourcePool::class);
+        $this->assertInstanceOf(FaqSourcePool::class, $instance);
+    }
+
+    public function testFaqCollectorIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(FaqCollectorInterface::class);
+        $this->assertInstanceOf(FaqCollectorInterface::class, $instance);
+    }
+
+    public function testLlmsJsonlBuilderIsInstantiableViaDi(): void
+    {
+        $instance = Bootstrap::getObjectManager()->get(JsonlBuilder::class);
+        $this->assertInstanceOf(JsonlBuilder::class, $instance);
+    }
+
+    public function testWellKnownEndpointPoolIsWiredWithBuiltinEndpoints(): void
+    {
+        /** @var WellKnownEndpointPool $pool */
+        $pool = Bootstrap::getObjectManager()->get(WellKnownEndpointPool::class);
+        $this->assertTrue($pool->has('ucp'));
+        $this->assertTrue($pool->has('ai-plugin.json'));
+        $this->assertTrue($pool->has('security.txt'));
     }
 }

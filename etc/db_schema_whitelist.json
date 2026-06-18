@@ -30,6 +30,16 @@
             "social_profiles": true,
             "contact_point": true,
             "org_type": true,
+            "street_address": true,
+            "address_locality": true,
+            "address_region": true,
+            "postal_code": true,
+            "address_country": true,
+            "telephone": true,
+            "email": true,
+            "latitude": true,
+            "longitude": true,
+            "price_range": true,
             "updated_at": true
         },
         "constraint": {
@@ -52,6 +62,24 @@
         },
         "index": {
             "RS_SEO_PRODUCT_OVERRIDE_PRODUCT_ID_IDX": true
+        }
+    },
+    "mage-os_seo_faq": {
+        "column": {
+            "entity_id": true,
+            "identifier": true,
+            "store_id": true,
+            "question": true,
+            "answer": true,
+            "sort_order": true,
+            "is_active": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        },
+        "index": {
+            "RS_SEO_FAQ_IDENTIFIER_STORE_IDX": true
         }
     }
 }

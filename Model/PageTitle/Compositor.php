@@ -6,17 +6,26 @@ namespace MageOS\Seo\Model\PageTitle;
 
 use Magento\Framework\View\Layout;
 use MageOS\Seo\Api\PageTitleProviderInterface;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 
 class Compositor
 {
     /**
+     * @var HandleMatcher
+     */
+    private readonly HandleMatcher $handleMatcher;
+
+    /**
      * @param Layout $layout
      * @param array<mixed> $providers
+     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
         private readonly Layout $layout,
-        private readonly array  $providers = []
+        private readonly array  $providers = [],
+        ?HandleMatcher $handleMatcher = null
     ) {
+        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**
@@ -35,7 +44,7 @@ class Compositor
             if (!$provider instanceof PageTitleProviderInterface) {
                 continue;
             }
-            if (!$this->handlesMatch($provider->getHandles(), $activeHandles)) {
+            if (!$this->handleMatcher->matches($provider->getHandles(), $activeHandles)) {
                 continue;
             }
             $title = $provider->getTitle();
@@ -51,20 +60,5 @@ class Compositor
         usort($candidates, static fn (array $a, array $b) => $b['sort'] <=> $a['sort']);
 
         return $candidates[0]['title'];
-    }
-
-    /**
-     * Check if any of the provider's handles match the current active handles.
-     *
-     * @param string[] $providerHandles
-     * @param string[] $activeHandles
-     * @return bool
-     */
-    private function handlesMatch(array $providerHandles, array $activeHandles): bool
-    {
-        if (\in_array('*', $providerHandles, true)) {
-            return true;
-        }
-        return !empty(array_intersect($providerHandles, $activeHandles));
     }
 }

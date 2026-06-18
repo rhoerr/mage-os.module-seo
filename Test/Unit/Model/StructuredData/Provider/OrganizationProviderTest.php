@@ -265,4 +265,53 @@ class OrganizationProviderTest extends TestCase
         // sameAs should be re-indexed (not associative)
         $this->assertSame(['https://facebook.com/acme'], $schemas[1 - 1]['sameAs'] ?? $schemas[0]['sameAs']);
     }
+
+    public function testLocalPresenceFieldsEmittedWhenPopulated(): void
+    {
+        $org = $this->acmeOrg(['org_type' => 'Store']);
+        $org->method('getAddress')->willReturn([
+            'street_address'   => '14 The Square',
+            'address_locality' => 'Shrewsbury',
+            'address_region'   => 'Shropshire',
+            'postal_code'      => 'SY1 1AA',
+            'address_country'  => 'GB',
+        ]);
+        $org->method('getLatitude')->willReturn('52.7081');
+        $org->method('getLongitude')->willReturn('-2.7549');
+        $org->method('getTelephone')->willReturn('+44 1743 000000');
+        $org->method('getEmail')->willReturn('hello@acme.com');
+        $org->method('getPriceRange')->willReturn('££');
+        $this->repository->method('getForScope')->willReturn($org);
+
+        $node = $this->provider->getSchemas()[0];
+
+        $this->assertSame('Store', $node['@type']);
+        $this->assertSame('PostalAddress', $node['address']['@type']);
+        $this->assertSame('14 The Square', $node['address']['streetAddress']);
+        $this->assertSame('GB', $node['address']['addressCountry']);
+        $this->assertSame('GeoCoordinates', $node['geo']['@type']);
+        $this->assertSame('52.7081', $node['geo']['latitude']);
+        $this->assertSame('+44 1743 000000', $node['telephone']);
+        $this->assertSame('hello@acme.com', $node['email']);
+        $this->assertSame('££', $node['priceRange']);
+    }
+
+    public function testLocalPresenceOmittedWhenEmpty(): void
+    {
+        $this->repository->method('getForScope')->willReturn($this->acmeOrg());
+        $node = $this->provider->getSchemas()[0];
+        $this->assertArrayNotHasKey('address', $node);
+        $this->assertArrayNotHasKey('geo', $node);
+        $this->assertArrayNotHasKey('telephone', $node);
+        $this->assertArrayNotHasKey('priceRange', $node);
+    }
+
+    public function testGeoOmittedWhenOnlyLatitudeSet(): void
+    {
+        $org = $this->acmeOrg();
+        $org->method('getLatitude')->willReturn('52.7');
+        $org->method('getLongitude')->willReturn('');
+        $this->repository->method('getForScope')->willReturn($org);
+        $this->assertArrayNotHasKey('geo', $this->provider->getSchemas()[0]);
+    }
 }

@@ -9,6 +9,44 @@
     <preference for="MageOS\Seo\Api\OrganisationRepositoryInterface"
                 type="MageOS\Seo\Model\OrganisationRepository"/>
 
+    <preference for="MageOS\Seo\Api\FaqCollectorInterface"
+                type="MageOS\Seo\Model\Faq\Collector"/>
+
+    <preference for="MageOS\Seo\Api\FaqRepositoryInterface"
+                type="MageOS\Seo\Model\FaqRepository"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         FAQ SOURCE POOL — bridges add sources (product-attribute, 3rd-party) here
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\Faq\SourcePool">
+        <arguments>
+            <argument name="sources" xsi:type="array">
+                <item name="table"
+                      xsi:type="object">MageOS\Seo\Model\Faq\Source\TableFaqSource</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- FAQ admin grid: collection for the listing UI component data source -->
+    <virtualType name="MageOS\Seo\Model\ResourceModel\Faq\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">mage-os_seo_faq</argument>
+            <argument name="resourceModel" xsi:type="string">MageOS\Seo\Model\ResourceModel\Faq</argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="mageos_seo_faq_listing_data_source" xsi:type="string">
+                    MageOS\Seo\Model\ResourceModel\Faq\Grid\Collection
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- ═══════════════════════════════════════════════════════════════════
          STRUCTURED DATA COMPOSITOR — built-in providers
          ═══════════════════════════════════════════════════════════════════ -->
@@ -35,6 +73,14 @@
                 <item name="cmsPage"
                       xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\CmsPageSchemaProvider</item>
 
+                <!-- AEO: bridge-fed Article + Event pools (empty by default) and Speakable -->
+                <item name="article"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\ArticleSchemaProvider</item>
+                <item name="event"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\EventSchemaProvider</item>
+                <item name="speakable"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\SpeakableProvider</item>
+
                 <!--
                     Bridge module providers are registered here by their own di.xml files.
                     DO NOT add MageOS_SellersSeo or MageOS_ProductVariantUrlSeo
@@ -55,6 +101,10 @@
     <type name="MageOS\Seo\Model\MetaTag\Compositor">
         <arguments>
             <argument name="providers" xsi:type="array">
+                <!-- Site-level OG + Twitter card — runs on every page -->
+                <item name="siteMeta"
+                      xsi:type="object">MageOS\Seo\Model\MetaTag\Provider\SiteMetaProvider</item>
+
                 <item name="productMeta"
                       xsi:type="object">MageOS\Seo\Model\MetaTag\Provider\ProductMetaProvider</item>
 
@@ -165,9 +215,24 @@
          SellersSeo registers VendorSectionProvider here via its own di.xml.
          ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- llms.jsonl line providers — bridge modules append catalog lines (e.g. vendor LocalBusiness) -->
+    <type name="MageOS\Seo\Model\LlmsJsonl\JsonlBuilder">
+        <arguments>
+            <argument name="lineProviders" xsi:type="array">
+                <!--
+                    Bridge example (from a marketplace module's di.xml):
+                    <item name="vendors"
+                          xsi:type="object">YourVendor\Module\Model\LlmsJsonl\VendorLineProvider</item>
+                -->
+            </argument>
+        </arguments>
+    </type>
+
     <type name="MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder">
         <arguments>
             <argument name="sectionProviders" xsi:type="array">
+                <item name="faq"
+                      xsi:type="object">MageOS\Seo\Model\LlmsTxt\FaqLlmsSectionProvider</item>
                 <!--
                     Bridge modules register their section providers here.
                     Example (from MageOS_SellersSeo/etc/di.xml):
@@ -179,20 +244,83 @@
     </type>
 
     <!-- ═══════════════════════════════════════════════════════════════════
+         PRODUCT OFFER ENRICHERS + AGGREGATE RATING POOL
+         Consumed by AbstractBuilder::buildBase(). Bridge modules add their own
+         OfferEnricherInterface / AggregateRatingProviderInterface via di.xml.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\Product\OfferEnricher\Pool">
+        <arguments>
+            <argument name="enrichers" xsi:type="array">
+                <item name="itemCondition"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ItemConditionEnricher</item>
+                <item name="returnPolicy"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ReturnPolicyEnricher</item>
+                <item name="shippingDetails"
+                      xsi:type="object">MageOS\Seo\Model\Product\OfferEnricher\ShippingDetailsEnricher</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="MageOS\Seo\Model\Review\AggregateRatingResolver">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="native"
+                      xsi:type="object">MageOS\Seo\Model\Review\NativeAggregateRatingProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         HREFLANG RESOLVER POOL
+         Bridge modules add resolvers for custom page types (vendor, blog)
+         via their own di.xml.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\Hreflang\ResolverPool">
+        <arguments>
+            <argument name="resolvers" xsi:type="array">
+                <item name="product"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\ProductHreflangResolver</item>
+                <item name="category"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\CategoryHreflangResolver</item>
+                <item name="cmsPage"
+                      xsi:type="object">MageOS\Seo\Model\Hreflang\Resolver\CmsPageHreflangResolver</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ROBOTS META POOL
+         Applied once per frontend page by Observer\ApplyRobotsMeta
+         (etc/frontend/events.xml). Bridge modules add providers for new page
+         types (blog, vendor) via their own di.xml — no applier needed.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <type name="MageOS\Seo\Model\RobotsMeta\Resolver">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="product"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\ProductRobotsProvider</item>
+                <item name="category"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CategoryRobotsProvider</item>
+                <item name="cmsPage"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CmsPageRobotsProvider</item>
+                <!-- Paginated listing pages (?p=N) — higher sortOrder wins over category default -->
+                <item name="catalogPagination"
+                      xsi:type="object">MageOS\Seo\Model\RobotsMeta\Provider\CatalogPaginationRobotsProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
          PLUGINS
          ═══════════════════════════════════════════════════════════════════ -->
 
-    <!-- Robots meta: product view controller -->
-    <type name="Magento\Catalog\Controller\Product\View">
-        <plugin name="rs_seo_product_robots_meta"
-                type="MageOS\Seo\Plugin\Controller\ProductRobotsMetaPlugin"
-                sortOrder="10"/>
-    </type>
-
-    <!-- Robots meta: category view controller -->
-    <type name="Magento\Catalog\Controller\Category\View">
-        <plugin name="rs_seo_category_robots_meta"
-                type="MageOS\Seo\Plugin\Controller\CategoryRobotsMetaPlugin"
+    <!-- AI crawler directives appended to robots.txt -->
+    <type name="Magento\Robots\Model\Robots">
+        <plugin name="rs_seo_ai_robots_directives"
+                type="MageOS\Seo\Plugin\Robots\AppendAiDirectivesPlugin"
                 sortOrder="10"/>
     </type>
 
@@ -247,5 +375,29 @@
     <!--<type name="MageOS\Seo\Model\Product\SchemaRegistry">
         <arguments/>
     </type>-->
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         WELL-KNOWN ENDPOINT REGISTRY (GEO / agentic discovery)
+         Bridge modules add /.well-known/* documents by appending to this pool
+         from their own di.xml — no edit to MageOS_Seo required.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <type name="MageOS\Seo\Model\WellKnown\EndpointPool">
+        <arguments>
+            <argument name="endpoints" xsi:type="array">
+                <item name="ucp" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\UcpEndpoint</item>
+                <item name="ai-plugin.json" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\AiPluginEndpoint</item>
+                <item name="security.txt" xsi:type="object">MageOS\Seo\Model\WellKnown\Endpoint\SecurityTxtEndpoint</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Register the UCP keygen CLI command -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="mageos_seo_ucp_keygen" xsi:type="object">MageOS\Seo\Console\Command\UcpKeygenCommand</item>
+            </argument>
+        </arguments>
+    </type>
 
 </config>

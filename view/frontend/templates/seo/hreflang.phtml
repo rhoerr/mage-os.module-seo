@@ -1,0 +1,17 @@
+<?php
+/**
+ * Hreflang alternate links output template.
+ *
+ * Cache safety: fully cacheable. Output varies only by URL (the FPC cache key). No cacheable="false".
+ *
+ * @var \MageOS\Seo\Block\Hreflang $block
+ */
+
+$links = $block->getLinks();
+if (empty($links)) {
+    return;
+}
+?>
+<?php foreach ($links as $link): ?>
+<link rel="alternate" hreflang="<?= $block->escapeHtmlAttr($link['hreflang']) ?>" href="<?= $block->escapeUrl($link['url']) ?>"/>
+<?php endforeach; ?>

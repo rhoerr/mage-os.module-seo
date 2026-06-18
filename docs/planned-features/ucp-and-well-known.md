@@ -1,5 +1,18 @@
 # Planned Feature: UCP Profile and Well-Known Endpoints
 
+> **Architecture amendment (roadmap Phase 4 — GEO):**
+> - Generalise the custom router from a hardcoded 3-path map to a **`WellKnownEndpointInterface`
+>   registry** the router dispatches over, so new `/.well-known/*` documents are added by other
+>   modules via di.xml. Built-ins: `ucp`, `ai-plugin.json`, `security.txt`. The
+>   `CapabilityProviderInterface` pool (already described) feeds the UCP profile.
+> - The **robots.txt AI-bot directives** section is delivered through the Phase-0 robots pool (a
+>   provider appends per-user-agent blocks), not a standalone plugin — see
+>   [robots-meta-pool.md](robots-meta-pool.md).
+>
+> Both follow [architecture-provider-pools.md](architecture-provider-pools.md). See
+> [_roadmap.md](_roadmap.md). The manifest structure, keygen, and security details below are
+> unchanged.
+
 **Status:** Planned — not yet implemented  
 **Module:** `MageOS_Seo`  
 **Complexity:** Medium (profile endpoint + key management) to Very High (live capability endpoints)  

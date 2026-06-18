@@ -16,10 +16,24 @@ class Config
     public const XML_SD_CATEGORY_ITEM_LIST_MAX     = 'mageos_seo_general/structured_data/category_item_list_max';
     public const XML_SD_HAS_VARIANT_MAX            = 'mageos_seo_general/structured_data/has_variant_max';
     public const XML_SD_PRICE_VALID_UNTIL_MONTHS   = 'mageos_seo_general/structured_data/price_valid_until_months';
+    public const XML_SD_AGGREGATE_RATING_ENABLED   = 'mageos_seo_general/structured_data/aggregate_rating_enabled';
     public const XML_LLMS_ENABLED                  = 'mageos_seo_general/llms_txt/enabled';
     public const XML_LLMS_FULL_ENABLED             = 'mageos_seo_general/llms_txt/full_enabled';
+    public const XML_LLMS_JSONL_ENABLED            = 'mageos_seo_general/llms_txt/jsonl_enabled';
     public const XML_ROBOTS_PRODUCT_DEFAULT        = 'mageos_seo_general/robots_meta/product_default';
     public const XML_ROBOTS_CATEGORY_DEFAULT       = 'mageos_seo_general/robots_meta/category_default';
+    public const XML_ROBOTS_CMS_DEFAULT            = 'mageos_seo_general/robots_meta/cms_page_default';
+    public const XML_ROBOTS_PAGINATED_ENABLED      = 'mageos_seo_general/robots_meta/paginated_enabled';
+    public const XML_ROBOTS_PAGINATED              = 'mageos_seo_general/robots_meta/paginated_robots';
+    public const XML_HREFLANG_ENABLED              = 'mageos_seo_general/hreflang/enabled';
+    public const XML_HREFLANG_XDEFAULT_STORE       = 'mageos_seo_general/hreflang/xdefault_store_id';
+    public const XML_HREFLANG_EXCLUDED_STORES      = 'mageos_seo_general/hreflang/excluded_store_ids';
+    public const XML_HREFLANG_LANGUAGE_ONLY        = 'mageos_seo_general/hreflang/language_only_enabled';
+    public const XML_HREFLANG_SITEMAP_ENABLED      = 'mageos_seo_general/hreflang/sitemap_enabled';
+    public const XML_AEO_SPEAKABLE_ENABLED         = 'mageos_seo_general/aeo/speakable_enabled';
+    public const XML_AEO_SPEAKABLE_SELECTORS       = 'mageos_seo_general/aeo/speakable_css_selectors';
+    public const XML_AI_ROBOTS_ENABLED             = 'mageos_seo_general/ai_robots/enabled';
+    public const XML_AI_ROBOTS_DISALLOWED          = 'mageos_seo_general/ai_robots/disallowed';
 
     /**
      * Initialize Config with scope configuration.
@@ -137,6 +151,21 @@ class Config
     }
 
     /**
+     * Check if AggregateRating output on product schema is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isAggregateRatingEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_SD_AGGREGATE_RATING_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
      * Check if the llms.txt endpoint is enabled.
      *
      * @param int|string|null $storeId
@@ -161,6 +190,21 @@ class Config
     {
         return (bool) $this->scopeConfig->getValue(
             self::XML_LLMS_FULL_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check if the /llms.jsonl product catalog endpoint is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isLlmsJsonlEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_LLMS_JSONL_ENABLED,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
@@ -194,5 +238,173 @@ class Config
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Return the default robots meta value for CMS pages.
+     *
+     * @param int|string|null $storeId
+     * @return string
+     */
+    public function getRobotsCmsDefault(int|string|null $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_CMS_DEFAULT,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check whether a dedicated robots meta is applied to paginated listing pages (?p=N, N>1).
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isPaginatedRobotsEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_PAGINATED_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the robots meta value applied to paginated listing pages (?p=N, N>1).
+     *
+     * @param int|string|null $storeId
+     * @return string
+     */
+    public function getRobotsPaginated(int|string|null $storeId = null): string
+    {
+        return (string) $this->scopeConfig->getValue(
+            self::XML_ROBOTS_PAGINATED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check if hreflang alternate output is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isHreflangEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_HREFLANG_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the store view ID to advertise as hreflang x-default (0 = none).
+     *
+     * @return int
+     */
+    public function getHreflangXDefaultStoreId(): int
+    {
+        return (int) $this->scopeConfig->getValue(self::XML_HREFLANG_XDEFAULT_STORE);
+    }
+
+    /**
+     * Return store view IDs excluded from all hreflang output.
+     *
+     * @return int[]
+     */
+    public function getHreflangExcludedStoreIds(): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(self::XML_HREFLANG_EXCLUDED_STORES);
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (string $id): int => (int) trim($id),
+            explode(',', $raw)
+        )));
+    }
+
+    /**
+     * Check if automatic language-only hreflang tags are enabled.
+     *
+     * @return bool
+     */
+    public function isHreflangLanguageOnlyEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_LANGUAGE_ONLY);
+    }
+
+    /**
+     * Check if the /hreflang-sitemap.xml endpoint is enabled.
+     *
+     * @return bool
+     */
+    public function isHreflangSitemapEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_SITEMAP_ENABLED);
+    }
+
+    /**
+     * Check if Speakable structured data output is enabled.
+     *
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isSpeakableEnabled(int|string|null $storeId = null): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::XML_AEO_SPEAKABLE_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the configured Speakable CSS selectors (one per line in admin).
+     *
+     * @param int|string|null $storeId
+     * @return string[]
+     */
+    public function getSpeakableCssSelectors(int|string|null $storeId = null): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(
+            self::XML_AEO_SPEAKABLE_SELECTORS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw) ?: [])));
+    }
+
+    /**
+     * Check if AI-crawler directives are appended to robots.txt.
+     *
+     * @return bool
+     */
+    public function isAiRobotsEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_AI_ROBOTS_ENABLED, ScopeInterface::SCOPE_STORE);
+    }
+
+    /**
+     * Return the AI user-agents to disallow in robots.txt.
+     *
+     * @return string[]
+     */
+    public function getAiDisallowedBots(): array
+    {
+        $raw = (string) $this->scopeConfig->getValue(self::XML_AI_ROBOTS_DISALLOWED, ScopeInterface::SCOPE_STORE);
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
     }
 }
