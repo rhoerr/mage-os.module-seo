@@ -25,7 +25,7 @@ class CleaningMode
      */
     public function matchingAnyTag(): string
     {
-        if (\class_exists(\Magento\Framework\Cache\CacheConstants::class)) {
+        if (class_exists(\Magento\Framework\Cache\CacheConstants::class)) {
             return \Magento\Framework\Cache\CacheConstants::CLEANING_MODE_MATCHING_ANY_TAG;
         }
 
