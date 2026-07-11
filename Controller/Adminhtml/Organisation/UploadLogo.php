@@ -6,6 +6,7 @@ namespace MageOS\Seo\Controller\Adminhtml\Organisation;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Exception\LocalizedException;
@@ -13,7 +14,7 @@ use Magento\Framework\Filesystem;
 use Magento\MediaStorage\Model\File\UploaderFactory;
 use Magento\Store\Model\StoreManagerInterface;
 
-class UploadLogo extends Action
+class UploadLogo extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::organisation';
 
@@ -49,10 +50,19 @@ class UploadLogo extends Action
 
         try {
             $uploader = $this->uploaderFactory->create(['fileId' => 'logo_upload']);
-            $uploader->setAllowedExtensions(['jpg', 'jpeg', 'gif', 'png', 'svg']);
+            // SVG is deliberately excluded: it can carry scripts and the uploader does no
+            // content sanitisation, so a stored SVG would be an XSS file on the media host.
+            $uploader->setAllowedExtensions(['jpg', 'jpeg', 'gif', 'png']);
             $uploader->setAllowRenameFiles(true);
             $uploader->setFilesDispersion(false);
             $uploader->setAllowCreateFolders(true);
+            // Content validation: reject files whose bytes are not a real image, whatever
+            // the extension claims (getimagesize fails on non-image payloads).
+            $uploader->addValidateCallback(
+                'seo_logo_image_content',
+                $this,
+                'validateImageContent'
+            );
 
             $mediaDirectory = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
             $uploadDir      = $mediaDirectory->getAbsolutePath(self::UPLOAD_PATH);
@@ -85,6 +95,22 @@ class UploadLogo extends Action
             return $result->setData(['error' => $e->getMessage(), 'errorcode' => $e->getCode()]);
         } catch (\Exception $e) {
             return $result->setData(['error' => __('Upload failed. Please try again.'), 'errorcode' => 0]);
+        }
+    }
+
+    /**
+     * Uploader validate callback: reject uploads whose content is not a real raster image.
+     *
+     * @param string $filePath
+     * @throws LocalizedException
+     * @return void
+     */
+    public function validateImageContent(string $filePath): void
+    {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction,Generic.PHP.NoSilencedErrors.Discouraged -- content sniffing requires getimagesize
+        $imageInfo = @getimagesize($filePath);
+        if ($imageInfo === false) {
+            throw new LocalizedException(__('The uploaded file is not a valid image.'));
         }
     }
 }

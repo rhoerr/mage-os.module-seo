@@ -4,7 +4,7 @@
 
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
-            <item name="provider" xsi:type="string">rs_seo_organisation_form.rs_seo_organisation_form_data_source</item>
+            <item name="provider" xsi:type="string">mageos_seo_organisation_form.mageos_seo_organisation_form_data_source</item>
         </item>
         <item name="label" xsi:type="string" translate="true">Organisation Settings</item>
         <item name="template" xsi:type="string">templates/form/collapsible</item>
@@ -15,24 +15,24 @@
         <buttons>
             <button name="save" class="MageOS\Seo\Block\Adminhtml\Organisation\SaveButton"/>
         </buttons>
-        <namespace>rs_seo_organisation_form</namespace>
+        <namespace>mageos_seo_organisation_form</namespace>
         <dataScope>data</dataScope>
         <deps>
-            <dep>rs_seo_organisation_form.rs_seo_organisation_form_data_source</dep>
+            <dep>mageos_seo_organisation_form.mageos_seo_organisation_form_data_source</dep>
         </deps>
     </settings>
 
-    <dataSource name="rs_seo_organisation_form_data_source">
+    <dataSource name="mageos_seo_organisation_form_data_source">
         <argument name="data" xsi:type="array">
             <item name="js_config" xsi:type="array">
                 <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
             </item>
         </argument>
         <settings>
-            <submitUrl path="rs_seo/organisation/save"/>
+            <submitUrl path="mageos_seo/organisation/save"/>
         </settings>
         <dataProvider class="MageOS\Seo\Ui\DataProvider\OrganisationDataProvider"
-                      name="rs_seo_organisation_form_data_source">
+                      name="mageos_seo_organisation_form_data_source">
             <settings>
                 <requestFieldName>entity_id</requestFieldName>
                 <primaryFieldName>entity_id</primaryFieldName>
@@ -127,16 +127,16 @@
             <settings>
                 <label translate="true">Custom SEO Logo</label>
                 <dataType>text</dataType>
-                <notice translate="true">Recommended: SVG or PNG, minimum 112x112px. Used in structured data and llms.txt.</notice>
+                <notice translate="true">Recommended: PNG, minimum 112x112px. Used in structured data and llms.txt.</notice>
                 <visible>false</visible>
             </settings>
             <formElements>
                 <fileUploader>
                     <settings>
                         <uploaderConfig>
-                            <param xsi:type="string" name="url">rs_seo/organisation/uploadLogo</param>
+                            <param xsi:type="string" name="url">mageos_seo/organisation/uploadLogo</param>
                         </uploaderConfig>
-                        <allowedExtensions>jpg jpeg gif png svg</allowedExtensions>
+                        <allowedExtensions>jpg jpeg gif png</allowedExtensions>
                         <maxFileSize>2097152</maxFileSize>
                     </settings>
                 </fileUploader>
