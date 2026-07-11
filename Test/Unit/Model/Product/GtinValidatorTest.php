@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\Product;
 
 use MageOS\Seo\Model\Product\GtinValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class GtinValidatorTest extends TestCase
@@ -40,6 +41,7 @@ class GtinValidatorTest extends TestCase
     /**
      * @dataProvider gtinProvider
      */
+    #[DataProvider('gtinProvider')] // data provider for the  function
     public function testResolveProperty(string $value, ?string $expected): void
     {
         $this->assertSame($expected, $this->validator->resolveProperty($value));
