@@ -87,7 +87,9 @@ class ProductLineBuilder
         } catch (\Exception) { // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch -- fall back to 0
             $value = 0.0;
         }
-        return number_format((float) $value, 2, '.', '');
+        // PriceInfo amounts are base currency; convert so the amount matches the
+        // display currency code emitted with it.
+        return number_format($this->currencyService->convertFromBase((float) $value), 2, '.', '');
     }
 
     /**

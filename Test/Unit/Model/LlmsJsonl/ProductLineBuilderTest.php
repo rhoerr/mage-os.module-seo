@@ -40,6 +40,7 @@ class ProductLineBuilderTest extends TestCase
 
         $currency = $this->createMock(CurrencyService::class);
         $currency->method('getCurrentCurrencyCode')->willReturn('GBP');
+        $currency->method('convertFromBase')->willReturnArgument(0);
 
         $finalPrice = $this->createMock(PriceInterface::class);
         $finalPrice->method('getValue')->willReturn(29.99);
