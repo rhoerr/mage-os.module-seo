@@ -29,7 +29,7 @@
             </item>
         </argument>
         <settings>
-            <submitUrl path="rs_seo/faq/save"/>
+            <submitUrl path="mageos_seo/faq/save"/>
         </settings>
         <dataProvider class="MageOS\Seo\Ui\DataProvider\Faq\FormDataProvider"
                       name="mageos_seo_faq_form_data_source">
