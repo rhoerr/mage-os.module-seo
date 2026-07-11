@@ -37,7 +37,7 @@ class Repository
         }
 
         $connection = $this->resourceConnection->getConnection();
-        $table      = $connection->getTableName('mage-os_seo_faq');
+        $table      = $this->resourceConnection->getTableName('mageos_seo_faq');
 
         $rows = $connection->fetchAll(
             $connection->select()

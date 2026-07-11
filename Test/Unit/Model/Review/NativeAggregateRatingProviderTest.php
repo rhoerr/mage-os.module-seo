@@ -29,11 +29,11 @@ class NativeAggregateRatingProviderTest extends TestCase
         $select           = $this->createMock(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
-        $this->connection->method('getTableName')->willReturn('review_entity_summary');
         $this->connection->method('select')->willReturn($select);
 
         $resourceConnection = $this->createMock(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($this->connection);
+        $resourceConnection->method('getTableName')->willReturn('review_entity_summary');
 
         $this->provider = new NativeAggregateRatingProvider($resourceConnection);
     }

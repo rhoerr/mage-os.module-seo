@@ -40,7 +40,7 @@ class ProductOverrideRepository
             return $this->cache[$cacheKey];
         }
 
-        $table = $this->connection->getTableName('mage-os_seo_product_override');
+        $table = $this->resourceConnection->getTableName('mageos_seo_product_override');
 
         $rows = $this->connection->fetchAll(
             $this->connection->select()
@@ -80,7 +80,7 @@ class ProductOverrideRepository
      */
     public function save(int $productId, int $storeId, array $data): void
     {
-        $table = $this->connection->getTableName('mage-os_seo_product_override');
+        $table = $this->resourceConnection->getTableName('mageos_seo_product_override');
 
         if (isset($data['override_fields']) && \is_array($data['override_fields'])) {
             $data['override_fields'] = json_encode($data['override_fields']);

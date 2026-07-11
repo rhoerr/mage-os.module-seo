@@ -87,7 +87,7 @@ class ConfigRepository
      */
     private function loadRow(int $categoryId, int $storeId = 0): array
     {
-        $table  = $this->connection->getTableName('mage-os_seo_category_config');
+        $table  = $this->resourceConnection->getTableName('mageos_seo_category_config');
         $select = $this->connection->select()
             ->from($table)
             ->where('category_id = ?', $categoryId);
@@ -131,7 +131,7 @@ class ConfigRepository
      */
     public function save(int $categoryId, array $data, int $storeId = 0): void
     {
-        $table = $this->connection->getTableName('mage-os_seo_category_config');
+        $table = $this->resourceConnection->getTableName('mageos_seo_category_config');
 
         // JSON-encode array values before persistence
         if (isset($data['enabled_fields']) && \is_array($data['enabled_fields'])) {
