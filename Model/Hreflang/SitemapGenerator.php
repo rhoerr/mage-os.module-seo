@@ -17,6 +17,14 @@ class SitemapGenerator
     private const ENTITY_TYPES = ['product', 'category', 'cms-page'];
 
     /**
+     * Sitemap protocol caps a file at 50,000 URLs; chunk below the cap for headroom.
+     */
+    private const MAX_URLS_PER_FILE = 45000;
+
+    public const INDEX_FILE   = 'hreflang-sitemap.xml';
+    public const CHUNK_FORMAT = 'hreflang-sitemap-%d.xml';
+
+    /**
      * @param StoreLocaleMap $storeLocaleMap
      * @param UrlRewriteFetcher $urlRewriteFetcher
      * @param LinkBuilder $linkBuilder
@@ -31,11 +39,53 @@ class SitemapGenerator
     }
 
     /**
-     * Generate the full hreflang sitemap XML.
+     * Generate the full hreflang sitemap as a single urlset document.
+     *
+     * Only suitable for small catalogues; generateFiles() applies the 50k-URL
+     * protocol limit and should be preferred.
      *
      * @return string
      */
     public function generate(): string
+    {
+        return $this->wrap($this->collectBlocks());
+    }
+
+    /**
+     * Generate the sitemap as one or more files honouring the 50k-URL protocol cap.
+     *
+     * Small catalogues produce a single urlset under the index file name; larger ones
+     * produce numbered chunk files plus a sitemap index referencing them.
+     *
+     * @param string $baseUrl Store base URL used for chunk locations in the index
+     * @return array<string, string> file name => XML content
+     */
+    public function generateFiles(string $baseUrl): array
+    {
+        $blocks = $this->collectBlocks();
+
+        if (\count($blocks) <= self::MAX_URLS_PER_FILE) {
+            return [self::INDEX_FILE => $this->wrap($blocks)];
+        }
+
+        $files        = [];
+        $indexEntries = [];
+        foreach (array_chunk($blocks, self::MAX_URLS_PER_FILE) as $i => $chunk) {
+            $name         = \sprintf(self::CHUNK_FORMAT, $i + 1);
+            $files[$name] = $this->wrap($chunk);
+            $indexEntries[] = rtrim($baseUrl, '/') . '/' . $name;
+        }
+        $files[self::INDEX_FILE] = $this->wrapIndex($indexEntries);
+
+        return $files;
+    }
+
+    /**
+     * Collect every <url> block for the sitemap (home pages + all entity types).
+     *
+     * @return string[]
+     */
+    private function collectBlocks(): array
     {
         $map      = $this->storeLocaleMap->getMap();
         $storeIds = array_keys($map);
@@ -50,7 +100,7 @@ class SitemapGenerator
             }
         }
 
-        return $this->wrap($blocks);
+        return $blocks;
     }
 
     /**
@@ -129,6 +179,27 @@ class SitemapGenerator
             . '        xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n"
             . ($blocks === [] ? '' : implode("\n", $blocks) . "\n")
             . '</urlset>' . "\n";
+    }
+
+    /**
+     * Wrap chunk file URLs in a sitemapindex document.
+     *
+     * @param string[] $chunkUrls
+     * @return string
+     */
+    private function wrapIndex(array $chunkUrls): string
+    {
+        $entries = [];
+        foreach ($chunkUrls as $url) {
+            $entries[] = '  <sitemap>' . "\n"
+                . '    <loc>' . $this->escape($url) . '</loc>' . "\n"
+                . '  </sitemap>';
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n"
+            . implode("\n", $entries) . "\n"
+            . '</sitemapindex>' . "\n";
     }
 
     /**
