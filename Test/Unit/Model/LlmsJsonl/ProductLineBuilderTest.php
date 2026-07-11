@@ -52,14 +52,13 @@ class ProductLineBuilderTest extends TestCase
         $this->product->method('getName')->willReturn('Blue Mug');
         $this->product->method('getSku')->willReturn('MUG-001');
         $this->product->method('getProductUrl')->willReturn('https://example.com/blue-mug.html');
-        $this->product->method('isSalable')->willReturn(true);
 
         $this->builder = new ProductLineBuilder($storeManager, $currency);
     }
 
     public function testBuildsRequiredFields(): void
     {
-        $node = $this->builder->build($this->product);
+        $node = $this->builder->build($this->product, true);
 
         $this->assertSame('https://schema.org', $node['@context']);
         $this->assertSame('Product', $node['@type']);
@@ -74,13 +73,9 @@ class ProductLineBuilderTest extends TestCase
 
     public function testOutOfStockAvailability(): void
     {
-        $product = $this->createMock(Product::class);
-        $product->method('getName')->willReturn('X');
-        $product->method('getProductUrl')->willReturn('https://example.com/x');
-        $product->method('getPriceInfo')->willReturn($this->product->getPriceInfo());
-        $product->method('isSalable')->willReturn(false);
-
-        $node = $this->builder->build($product);
+        // Salability is supplied by the caller (batch-resolved via MSI in
+        // JsonlBuilder), never derived from the product itself.
+        $node = $this->builder->build($this->product, false);
         $this->assertSame('https://schema.org/OutOfStock', $node['offers']['availability']);
     }
 
@@ -89,7 +84,7 @@ class ProductLineBuilderTest extends TestCase
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => $m === 'getShortDescription' ? '<p>A <strong>great</strong> mug</p>' : null
         );
-        $node = $this->builder->build($this->product);
+        $node = $this->builder->build($this->product, true);
         $this->assertSame('A great mug', $node['description']);
     }
 
@@ -99,14 +94,14 @@ class ProductLineBuilderTest extends TestCase
         $this->store->method('getBaseUrl')->with(UrlInterface::URL_TYPE_MEDIA)
             ->willReturn('https://example.com/media/');
 
-        $node = $this->builder->build($this->product);
+        $node = $this->builder->build($this->product, true);
         $this->assertSame('https://example.com/media/catalog/product/m/u/mug.jpg', $node['image']);
     }
 
     public function testImageOmittedWhenNoSelection(): void
     {
         $this->product->method('getImage')->willReturn('no_selection');
-        $node = $this->builder->build($this->product);
+        $node = $this->builder->build($this->product, true);
         $this->assertArrayNotHasKey('image', $node);
     }
 }

@@ -6,14 +6,13 @@ namespace MageOS\Seo\Test\Unit\Model\Product\Builder;
 
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\CatalogInventory\Api\Data\StockItemInterface;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Pricing\Price\PriceInterface;
 use Magento\Framework\Pricing\PriceInfoInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
 use MageOS\Seo\Model\Product\Builder\ApparelBuilder;
 use MageOS\Seo\Model\Product\GtinValidator;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
@@ -40,9 +39,9 @@ class ApparelBuilderTest extends TestCase
     private CurrencyService&MockObject $currencyService;
 
     /**
-     * @var StockRegistryInterface&MockObject
+     * @var AvailabilityResolver&MockObject
      */
-    private StockRegistryInterface&MockObject $stockRegistry;
+    private AvailabilityResolver&MockObject $availabilityResolver;
 
     /**
      * @var ImageHelper&MockObject
@@ -84,7 +83,7 @@ class ApparelBuilderTest extends TestCase
         $this->storeManager    = $this->createMock(StoreManagerInterface::class);
         $this->store           = $this->createMock(Store::class);
         $this->currencyService = $this->createMock(CurrencyService::class);
-        $this->stockRegistry   = $this->createMock(StockRegistryInterface::class);
+        $this->availabilityResolver = $this->createMock(AvailabilityResolver::class);
         $this->imageHelper     = $this->createMock(ImageHelper::class);
         $this->seoConfig       = $this->createMock(Config::class);
         $this->dateTime        = $this->createMock(DateTime::class);
@@ -111,7 +110,7 @@ class ApparelBuilderTest extends TestCase
         $this->builder = new ApparelBuilder(
             $this->storeManager,
             $this->currencyService,
-            $this->stockRegistry,
+            $this->availabilityResolver,
             $this->imageHelper,
             $this->seoConfig,
             $this->dateTime,
@@ -121,16 +120,9 @@ class ApparelBuilderTest extends TestCase
         );
     }
 
-    private function makeStockItem(bool $inStock): StockItemInterface&MockObject
-    {
-        $item = $this->createMock(StockItemInterface::class);
-        $item->method('getIsInStock')->willReturn($inStock);
-        return $item;
-    }
-
     private function withInStock(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
     }
 
     public function testGetTemplateCode(): void

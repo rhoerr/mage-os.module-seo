@@ -33,10 +33,15 @@ class ProductLineBuilder
     /**
      * Build the JSON-LD Product node for a product.
      *
+     * Salability is passed in explicitly (resolved in one MSI batch call per
+     * collection page by JsonlBuilder) instead of consulting the product's
+     * legacy is_salable state per line.
+     *
      * @param ProductInterface $product
+     * @param bool $isSalable
      * @return array<string, mixed>
      */
-    public function build(ProductInterface $product): array
+    public function build(ProductInterface $product, bool $isSalable): array
     {
         /** @var \Magento\Catalog\Model\Product $product */
         $url = $product->getProductUrl();
@@ -51,7 +56,7 @@ class ProductLineBuilder
                 '@type'         => 'Offer',
                 'price'         => $this->price($product),
                 'priceCurrency' => $this->currencyService->getCurrentCurrencyCode(),
-                'availability'  => $product->isSalable() ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT,
+                'availability'  => $isSalable ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT,
                 'url'           => $url,
             ],
         ];

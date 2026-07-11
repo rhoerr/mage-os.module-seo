@@ -6,11 +6,11 @@ namespace MageOS\Seo\Model\Product\Builder;
 
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\ProductSchemaBuilderInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
 use MageOS\Seo\Model\Product\GtinValidator;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
@@ -18,11 +18,12 @@ use MageOS\Seo\Service\CurrencyService;
 
 abstract class AbstractBuilder implements ProductSchemaBuilderInterface
 {
-    // Standard availability URIs. Bridge modules can supply any schema.org
-    // availability URI (e.g. PreOrder) via $variantData['_availability'].
-    protected const AVAILABILITY_IN_STOCK  = 'https://schema.org/InStock';
-    protected const AVAILABILITY_OUT       = 'https://schema.org/OutOfStock';
-    protected const AVAILABILITY_BACKORDER = 'https://schema.org/BackOrder';
+    // Standard availability URIs (canonical values live on AvailabilityResolver).
+    // Bridge modules can supply any schema.org availability URI (e.g. PreOrder)
+    // via $variantData['_availability'].
+    protected const AVAILABILITY_IN_STOCK  = AvailabilityResolver::IN_STOCK;
+    protected const AVAILABILITY_OUT       = AvailabilityResolver::OUT_OF_STOCK;
+    protected const AVAILABILITY_BACKORDER = AvailabilityResolver::BACKORDER;
 
     /**
      * All collaborators are required: Magento's ObjectManager passes the default value
@@ -32,7 +33,7 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
      *
      * @param StoreManagerInterface $storeManager
      * @param CurrencyService $currencyService
-     * @param StockRegistryInterface $stockRegistry
+     * @param AvailabilityResolver $availabilityResolver
      * @param ImageHelper $imageHelper
      * @param Config $seoConfig
      * @param DateTime $dateTime
@@ -43,7 +44,7 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     public function __construct(
         protected readonly StoreManagerInterface  $storeManager,
         protected readonly CurrencyService        $currencyService,
-        protected readonly StockRegistryInterface $stockRegistry,
+        protected readonly AvailabilityResolver   $availabilityResolver,
         protected readonly ImageHelper            $imageHelper,
         protected readonly Config                 $seoConfig,
         protected readonly DateTime               $dateTime,
@@ -257,6 +258,9 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     /**
      * Resolve schema.org availability URI.
      *
+     * Variant data wins (bridge modules supply per-variant availability);
+     * otherwise MSI salability for the current website via AvailabilityResolver.
+     *
      * @param \Magento\Catalog\Api\Data\ProductInterface $product
      * @param mixed[] $variantData
      * @return string
@@ -266,18 +270,8 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
         if (!empty($variantData['_availability'])) {
             return $variantData['_availability'];
         }
-        try {
-            $stock = $this->stockRegistry->getStockItem((int) $product->getId());
-            if ($stock->getIsInStock()) {
-                return self::AVAILABILITY_IN_STOCK;
-            }
-            // Out of stock but backorderable: customers can still order.
-            if ((int) $stock->getBackorders() > 0) {
-                return self::AVAILABILITY_BACKORDER;
-            }
-        } catch (\Exception) { // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch -- fall through to default
-        }
-        return self::AVAILABILITY_OUT;
+
+        return $this->availabilityResolver->resolve($product);
     }
 
     /**

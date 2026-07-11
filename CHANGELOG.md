@@ -98,6 +98,14 @@ become public contract.
 - Organisation model and the JSON-LD block implement `IdentityInterface`, so saving
   Organisation settings purges the affected FPC/Varnish pages by tag automatically
   (replaces the manual full_page cache-type invalidation).
+- Product availability is resolved through the MSI service contracts
+  (`IsProductSalableInterface` + backorders via `GetStockItemConfigurationInterface`,
+  batched with `AreProductsSalableInterface` for llms.jsonl) via a new
+  `AvailabilityResolver` service, replacing the deprecated CatalogInventory
+  `StockRegistry`/`Stock` helper which ignores multi-source stock assignment.
+  composer dependencies move from `magento/module-catalog-inventory` to
+  `magento/module-inventory-sales-api` + `magento/module-inventory-configuration-api`;
+  installations that have physically removed the MSI modules cannot use this module.
 
 ## [1.1.0] — 2026 (pre-review baseline)
 

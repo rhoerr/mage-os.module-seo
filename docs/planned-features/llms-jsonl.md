@@ -132,7 +132,7 @@ Loading the deepest category name per product naively would require N queries (o
 
 ### Stock availability
 
-Use `Magento\CatalogInventory\Api\StockRegistryInterface::getProductStockStatus(int $productId)` after the collection load — this is pre-indexed and fast. Alternatively add a join via `Magento\CatalogInventory\Model\ResourceModel\Stock\Status::addStockDataToCollection()`.
+Implemented via the MSI service contracts: `Magento\InventorySalesApi\Api\AreProductsSalableInterface` resolves salability for a whole collection page in one batch call (stock ID from `MageOS\Seo\Model\Product\AvailabilityResolver`). The originally-planned CatalogInventory `StockRegistryInterface` approach was dropped — it is deprecated and ignores multi-source stock assignment.
 
 ### Performance thresholds
 

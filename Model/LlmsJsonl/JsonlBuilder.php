@@ -8,16 +8,18 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
-use Magento\CatalogInventory\Helper\Stock as StockHelper;
+use Magento\InventorySalesApi\Api\AreProductsSalableInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\JsonlLineProviderInterface;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
+use Psr\Log\LoggerInterface;
 
 /**
  * Builds the /llms.jsonl document: one JSON-LD Product node per line for the store's catalog, plus
  * any lines contributed by bridge JsonlLineProviderInterface implementations.
  *
- * The catalog is processed in pages with URL rewrites and stock status loaded per page, so large
- * catalogs neither exhaust memory nor trigger per-product lookup queries.
+ * The catalog is processed in pages with URL rewrites and MSI salability resolved in one batch call
+ * per page, so large catalogs neither exhaust memory nor trigger per-product lookup queries.
  */
 class JsonlBuilder
 {
@@ -27,15 +29,19 @@ class JsonlBuilder
      * @param CollectionFactory $collectionFactory
      * @param ProductLineBuilder $productLineBuilder
      * @param StoreManagerInterface $storeManager
-     * @param StockHelper $stockHelper
+     * @param AreProductsSalableInterface $areProductsSalable
+     * @param AvailabilityResolver $availabilityResolver
+     * @param LoggerInterface $logger
      * @param array<mixed> $lineProviders
      */
     public function __construct(
-        private readonly CollectionFactory      $collectionFactory,
-        private readonly ProductLineBuilder     $productLineBuilder,
-        private readonly StoreManagerInterface  $storeManager,
-        private readonly StockHelper            $stockHelper,
-        private readonly array                  $lineProviders = []
+        private readonly CollectionFactory           $collectionFactory,
+        private readonly ProductLineBuilder          $productLineBuilder,
+        private readonly StoreManagerInterface       $storeManager,
+        private readonly AreProductsSalableInterface $areProductsSalable,
+        private readonly AvailabilityResolver        $availabilityResolver,
+        private readonly LoggerInterface             $logger,
+        private readonly array                       $lineProviders = []
     ) {
     }
 
@@ -68,15 +74,25 @@ class JsonlBuilder
         for ($page = 1; $page <= $lastPage; $page++) {
             $collection->setCurPage($page);
             $collection->clear();
-            // Sets is_salable on every item in one pass instead of per-product
-            // salability resolution inside the line builder.
-            $this->stockHelper->addStockStatusToProducts($collection);
+
+            // One MSI batch salability call per page instead of per-product
+            // resolution inside the line builder.
+            $skus = [];
+            foreach ($collection as $product) {
+                if ($product instanceof ProductInterface && (string) $product->getSku() !== '') {
+                    $skus[] = (string) $product->getSku();
+                }
+            }
+            $salability = $this->resolveSalability($skus);
 
             foreach ($collection as $product) {
                 if (!$product instanceof ProductInterface) {
                     continue;
                 }
-                $line = $this->encode($this->productLineBuilder->build($product));
+                $line = $this->encode($this->productLineBuilder->build(
+                    $product,
+                    $salability[(string) $product->getSku()] ?? false
+                ));
                 if ($line !== '') {
                     $output .= $line . "\n";
                 }
@@ -96,6 +112,38 @@ class JsonlBuilder
         }
 
         return $output;
+    }
+
+    /**
+     * Resolve salability for a page of SKUs in one MSI batch call.
+     *
+     * On inventory API failure every product in the page is reported not
+     * salable (matching AvailabilityResolver's OutOfStock default) and the
+     * failure is logged rather than aborting the whole feed build.
+     *
+     * @param string[] $skus
+     * @return array<string, bool> sku => salable
+     */
+    private function resolveSalability(array $skus): array
+    {
+        if (empty($skus)) {
+            return [];
+        }
+
+        $salability = [];
+        try {
+            $stockId = $this->availabilityResolver->getCurrentStockId();
+            foreach ($this->areProductsSalable->execute($skus, $stockId) as $result) {
+                $salability[(string) $result->getSku()] = $result->isSalable();
+            }
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'MageOS_Seo: llms.jsonl salability batch failed: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
+        }
+
+        return $salability;
     }
 
     /**
