@@ -20,6 +20,7 @@ class Config
     public const XML_LLMS_ENABLED                  = 'mageos_seo_general/llms_txt/enabled';
     public const XML_LLMS_FULL_ENABLED             = 'mageos_seo_general/llms_txt/full_enabled';
     public const XML_LLMS_JSONL_ENABLED            = 'mageos_seo_general/llms_txt/jsonl_enabled';
+    public const XML_FEEDS_STORAGE_DIR             = 'mageos_seo_general/feeds/storage_dir';
     public const XML_ROBOTS_PRODUCT_DEFAULT        = 'mageos_seo_general/robots_meta/product_default';
     public const XML_ROBOTS_CATEGORY_DEFAULT       = 'mageos_seo_general/robots_meta/category_default';
     public const XML_ROBOTS_CMS_DEFAULT            = 'mageos_seo_general/robots_meta/cms_page_default';
@@ -30,6 +31,7 @@ class Config
     public const XML_HREFLANG_EXCLUDED_STORES      = 'mageos_seo_general/hreflang/excluded_store_ids';
     public const XML_HREFLANG_LANGUAGE_ONLY        = 'mageos_seo_general/hreflang/language_only_enabled';
     public const XML_HREFLANG_SITEMAP_ENABLED      = 'mageos_seo_general/hreflang/sitemap_enabled';
+    public const XML_HREFLANG_SAME_WEBSITE_ONLY    = 'mageos_seo_general/hreflang/same_website_only';
     public const XML_AEO_SPEAKABLE_ENABLED         = 'mageos_seo_general/aeo/speakable_enabled';
     public const XML_AEO_SPEAKABLE_SELECTORS       = 'mageos_seo_general/aeo/speakable_css_selectors';
     public const XML_AI_ROBOTS_ENABLED             = 'mageos_seo_general/ai_robots/enabled';
@@ -211,6 +213,19 @@ class Config
     }
 
     /**
+     * Absolute directory for pre-generated feed files, or '' for the default (var/mageos_seo).
+     *
+     * Scaled deployments point this at a mount shared between the web hosts and the
+     * host running cron/queue consumers; var/ is host-local on multi-server setups.
+     *
+     * @return string
+     */
+    public function getFeedStorageDir(): string
+    {
+        return trim((string) $this->scopeConfig->getValue(self::XML_FEEDS_STORAGE_DIR));
+    }
+
+    /**
      * Return the default robots meta value for product pages.
      *
      * @param int|string|null $storeId
@@ -346,6 +361,16 @@ class Config
     public function isHreflangSitemapEnabled(): bool
     {
         return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_SITEMAP_ENABLED);
+    }
+
+    /**
+     * Check if hreflang alternates are limited to stores of the current website.
+     *
+     * @return bool
+     */
+    public function isHreflangSameWebsiteOnly(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(self::XML_HREFLANG_SAME_WEBSITE_ONLY);
     }
 
     /**
