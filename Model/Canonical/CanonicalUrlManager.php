@@ -9,9 +9,10 @@ use Magento\Framework\View\Page\Config as PageConfig;
 /**
  * Manages canonical URL output for product and category pages.
  *
- * Solves the duplicate-canonical problem documented in ProductVariantUrl_Preselect_CONTEXT.md
- * by removing the default canonical before setting the correct one. This service is the
- * single authoritative place for canonical manipulation across all MageOS modules.
+ * Bridge-module API: nothing inside MageOS_Seo calls setCanonical() — sibling modules
+ * (e.g. product-variant URL modules) use it to replace the core canonical with their
+ * own. It is the single authoritative place for canonical manipulation so consumers
+ * never end up emitting duplicate canonical tags.
  */
 class CanonicalUrlManager
 {
@@ -20,15 +21,12 @@ class CanonicalUrlManager
      *
      * @param string $canonicalUrl Absolute URL to use as the canonical
      * @param \Magento\Framework\View\Page\Config $pageConfig
-     * @param string $urlKey The product or category URL key (without suffix), used to
-     *                       identify the default canonical to remove
+     * @param string $urlKey Unused; retained for backward compatibility with early consumers
      * @return void
      */
     public function setCanonical(string $canonicalUrl, PageConfig $pageConfig, string $urlKey = ''): void
     {
-        if ($urlKey !== '') {
-            $this->removeDefaultCanonical($pageConfig, $urlKey);
-        }
+        $this->removeExistingCanonicals($pageConfig);
 
         $pageConfig->addRemotePageAsset(
             $canonicalUrl,
@@ -38,21 +36,21 @@ class CanonicalUrlManager
     }
 
     /**
-     * Remove the default canonical URL that Magento adds based on the product/category URL key.
+     * Remove every existing canonical link asset (e.g. the default one core adds).
      *
-     * The asset collection is keyed by the full URL string, so we match on the url_key suffix.
+     * Matches on the asset content type: the page asset collection also holds all
+     * CSS/JS/image assets, so matching identifiers against a URL-key pattern could
+     * remove arbitrary assets (a url_key of "print" would match css/print.css).
      *
      * @param \Magento\Framework\View\Page\Config $pageConfig
-     * @param string $urlKey
      * @return void
      */
-    private function removeDefaultCanonical(PageConfig $pageConfig, string $urlKey): void
+    private function removeExistingCanonicals(PageConfig $pageConfig): void
     {
         $assets = $pageConfig->getAssetCollection();
-        $pattern = '#/' . preg_quote($urlKey, '#') . '(\.[a-zA-Z]{1,5})?$#';
-        foreach (array_keys($assets->getAll()) as $identifier) {
-            if (preg_match($pattern, (string) $identifier)) {
-                $assets->remove($identifier);
+        foreach ($assets->getAll() as $identifier => $asset) {
+            if ($asset->getContentType() === 'canonical') {
+                $assets->remove((string) $identifier);
             }
         }
     }
