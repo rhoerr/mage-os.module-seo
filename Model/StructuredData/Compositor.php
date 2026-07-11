@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\StructuredData;
 
-use Magento\Framework\View\Layout;
+use Magento\Framework\View\LayoutInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
 use MageOS\Seo\Model\Pool\HandleMatcher;
 use MageOS\Seo\Model\Product\SchemaRegistry;
@@ -12,23 +12,17 @@ use MageOS\Seo\Model\Product\SchemaRegistry;
 class Compositor
 {
     /**
-     * @var HandleMatcher
-     */
-    private readonly HandleMatcher $handleMatcher;
-
-    /**
-     * @param Layout $layout
+     * @param LayoutInterface $layout
      * @param SchemaRegistry $schemaRegistry
+     * @param HandleMatcher $handleMatcher
      * @param array<mixed> $providers
-     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
-        private readonly Layout         $layout,
+        private readonly LayoutInterface         $layout,
         private readonly SchemaRegistry $schemaRegistry,
-        private readonly array          $providers = [],
-        ?HandleMatcher $handleMatcher = null
+        private readonly HandleMatcher  $handleMatcher,
+        private readonly array          $providers = []
     ) {
-        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**
@@ -74,17 +68,17 @@ class Compositor
             return '';
         }
 
+        // JSON_HEX_TAG/JSON_HEX_AMP encode <, > and & as \uXXXX so neither </script>
+        // nor <!-- can ever appear inside the inline <script> payload, keeping the
+        // output valid JSON (a post-encode str_replace cannot guarantee that).
         $json = json_encode(
             $schemas,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
         if ($json === false) {
             return '';
         }
-
-        // XSS protection: prevent </script> injection and HTML comment breaking.
-        $json = str_replace(['</', '<!--'], ['<\/', '<\!--'], $json);
 
         return $json;
     }
