@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\RobotsMeta\Provider;
 
 use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Framework\Registry;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Category\ProductOverrideRepository;
 use MageOS\Seo\Model\Config;
 use MageOS\Seo\Model\RobotsMeta\Provider\ProductRobotsProvider;
@@ -15,9 +15,9 @@ use PHPUnit\Framework\TestCase;
 class ProductRobotsProviderTest extends TestCase
 {
     /**
-     * @var Registry&MockObject
+     * @var CurrentEntity&MockObject
      */
-    private Registry&MockObject $registry;
+    private CurrentEntity&MockObject $currentEntity;
 
     /**
      * @var ProductOverrideRepository&MockObject
@@ -36,11 +36,11 @@ class ProductRobotsProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->registry           = $this->createMock(Registry::class);
+        $this->currentEntity           = $this->createMock(CurrentEntity::class);
         $this->overrideRepository = $this->createMock(ProductOverrideRepository::class);
         $this->config             = $this->createMock(Config::class);
         $this->provider           = new ProductRobotsProvider(
-            $this->registry,
+            $this->currentEntity,
             $this->overrideRepository,
             $this->config
         );
@@ -50,7 +50,7 @@ class ProductRobotsProviderTest extends TestCase
     {
         $product = $this->createMock(ProductInterface::class);
         $product->method('getId')->willReturn($id);
-        $this->registry->method('registry')->with('current_product')->willReturn($product);
+        $this->currentEntity->method('getProduct')->willReturn($product);
     }
 
     public function testHandlesProductView(): void
@@ -65,7 +65,7 @@ class ProductRobotsProviderTest extends TestCase
 
     public function testReturnsNullWhenNoCurrentProduct(): void
     {
-        $this->registry->method('registry')->with('current_product')->willReturn(null);
+        $this->currentEntity->method('getProduct')->willReturn(null);
         $this->assertNull($this->provider->getRobots(1));
     }
 

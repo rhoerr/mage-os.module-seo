@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\RobotsMeta\Provider;
 
-use Magento\Framework\Registry;
 use MageOS\Seo\Api\RobotsMetaProviderInterface;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Category\ProductOverrideRepository;
 use MageOS\Seo\Model\Config;
 
@@ -15,12 +15,12 @@ use MageOS\Seo\Model\Config;
 class ProductRobotsProvider implements RobotsMetaProviderInterface
 {
     /**
-     * @param Registry $registry
+     * @param CurrentEntity $currentEntity
      * @param ProductOverrideRepository $productOverrideRepository
      * @param Config $seoConfig
      */
     public function __construct(
-        private readonly Registry                  $registry,
+        private readonly CurrentEntity $currentEntity,
         private readonly ProductOverrideRepository $productOverrideRepository,
         private readonly Config                    $seoConfig
     ) {
@@ -39,7 +39,7 @@ class ProductRobotsProvider implements RobotsMetaProviderInterface
      */
     public function getRobots(int $storeId): ?string
     {
-        $product = $this->registry->registry('current_product');
+        $product = $this->currentEntity->getProduct();
         if (!$product) {
             return null;
         }

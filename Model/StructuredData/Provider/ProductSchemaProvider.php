@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace MageOS\Seo\Model\StructuredData\Provider;
 
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Registry;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Category\ConfigRepository as CategoryConfigRepository;
 use MageOS\Seo\Model\Category\ProductOverrideRepository;
 use MageOS\Seo\Model\Config;
@@ -20,7 +20,7 @@ class ProductSchemaProvider implements StructuredDataProviderInterface
     private const VARIANT_DATA_PARAM = 'variant_slug_data';
 
     /**
-     * @param Registry $registry
+     * @param CurrentEntity $currentEntity
      * @param SchemaBuilderPool $builderPool
      * @param SchemaRegistry $schemaRegistry
      * @param CategoryConfigRepository $categoryConfigRepository
@@ -30,7 +30,7 @@ class ProductSchemaProvider implements StructuredDataProviderInterface
      * @param RequestInterface $request
      */
     public function __construct(
-        private readonly Registry                  $registry,
+        private readonly CurrentEntity $currentEntity,
         private readonly SchemaBuilderPool         $builderPool,
         private readonly SchemaRegistry            $schemaRegistry,
         private readonly CategoryConfigRepository  $categoryConfigRepository,
@@ -54,10 +54,11 @@ class ProductSchemaProvider implements StructuredDataProviderInterface
      */
     public function getSchemas(): array
     {
-        $product = $this->registry->registry('current_product');
+        $product = $this->currentEntity->getProduct();
         if (!$product) {
             return [];
         }
+        /** @var \Magento\Catalog\Model\Product $product */
 
         $storeId    = (int) $this->storeManager->getStore()->getId();
         $productId  = (int) $product->getId();

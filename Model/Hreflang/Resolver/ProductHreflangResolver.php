@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\Hreflang\Resolver;
 
-use Magento\Framework\Registry;
 use MageOS\Seo\Api\HreflangResolverInterface;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Hreflang\LinkBuilder;
 
 /**
@@ -14,11 +14,11 @@ use MageOS\Seo\Model\Hreflang\LinkBuilder;
 class ProductHreflangResolver implements HreflangResolverInterface
 {
     /**
-     * @param Registry $registry
+     * @param CurrentEntity $currentEntity
      * @param LinkBuilder $linkBuilder
      */
     public function __construct(
-        private readonly Registry    $registry,
+        private readonly CurrentEntity $currentEntity,
         private readonly LinkBuilder $linkBuilder
     ) {
     }
@@ -36,7 +36,7 @@ class ProductHreflangResolver implements HreflangResolverInterface
      */
     public function getLinks(): array
     {
-        $product = $this->registry->registry('current_product');
+        $product = $this->currentEntity->getProduct();
         if (!$product) {
             return [];
         }
