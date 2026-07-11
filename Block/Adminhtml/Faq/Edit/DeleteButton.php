@@ -24,8 +24,10 @@ class DeleteButton extends GenericButton implements ButtonProviderInterface
         return [
             'label'      => (string) __('Delete'),
             'class'      => 'delete',
+            // The third deleteConfirm() argument makes the confirmation submit a POST
+            // (mage.dataPost with form key) instead of a plain GET redirect.
             'on_click'   => \sprintf(
-                "deleteConfirm('%s', '%s')",
+                "deleteConfirm('%s', '%s', {data: {}})",
                 (string) __('Are you sure you want to delete this FAQ?'),
                 $url
             ),

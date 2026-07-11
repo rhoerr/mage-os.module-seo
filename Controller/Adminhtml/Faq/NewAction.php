@@ -6,10 +6,11 @@ namespace MageOS\Seo\Controller\Adminhtml\Faq;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\Forward;
 use Magento\Framework\Controller\Result\ForwardFactory;
 
-class NewAction extends Action
+class NewAction extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::faq';
 

@@ -6,14 +6,17 @@ namespace MageOS\Seo\Controller\Adminhtml\Faq;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use MageOS\Seo\Api\Data\FaqInterface;
 use MageOS\Seo\Api\FaqRepositoryInterface;
 use MageOS\Seo\Model\FaqFactory;
+use MageOS\Seo\Model\Feed\FeedInvalidator;
 
-class Save extends Action
+class Save extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::faq';
 
@@ -22,12 +25,14 @@ class Save extends Action
      * @param FaqRepositoryInterface $faqRepository
      * @param FaqFactory $faqFactory
      * @param DataPersistorInterface $dataPersistor
+     * @param FeedInvalidator $feedInvalidator
      */
     public function __construct(
         Context                                 $context,
         private readonly FaqRepositoryInterface $faqRepository,
         private readonly FaqFactory             $faqFactory,
-        private readonly DataPersistorInterface $dataPersistor
+        private readonly DataPersistorInterface $dataPersistor,
+        private readonly FeedInvalidator        $feedInvalidator
     ) {
         parent::__construct($context);
     }
@@ -54,6 +59,9 @@ class Save extends Action
             $faq = $entityId !== 0 ? $this->faqRepository->getById($entityId) : $this->faqFactory->create();
             $this->populate($faq, $data);
             $this->faqRepository->save($faq);
+            // Cached pages purge via the model's identities; bridge providers may embed
+            // FAQ content in llms.txt, so those feed files regenerate too.
+            $this->feedInvalidator->invalidateLlms();
 
             $this->messageManager->addSuccessMessage((string) __('The FAQ entry has been saved.'));
             $this->dataPersistor->clear('mageos_seo_faq');
@@ -78,14 +86,23 @@ class Save extends Action
      *
      * @param FaqInterface $faq
      * @param mixed[] $data
+     * @throws LocalizedException When a required field is empty
      * @return void
      */
     private function populate(FaqInterface $faq, array $data): void
     {
-        $faq->setIdentifier(trim((string) ($data['identifier'] ?? '')));
-        $faq->setStoreId((int) ($data['store_id'] ?? 0));
-        $faq->setQuestion((string) ($data['question'] ?? ''));
-        $faq->setAnswer((string) ($data['answer'] ?? ''));
+        $identifier = trim((string) ($data['identifier'] ?? ''));
+        $question   = trim((string) ($data['question'] ?? ''));
+        $answer     = trim((string) ($data['answer'] ?? ''));
+
+        if ($identifier === '' || $question === '' || $answer === '') {
+            throw new LocalizedException(__('Identifier, question and answer are required.'));
+        }
+
+        $faq->setIdentifier($identifier);
+        $faq->setStoreId(max(0, (int) ($data['store_id'] ?? 0)));
+        $faq->setQuestion($question);
+        $faq->setAnswer($answer);
         $faq->setSortOrder((int) ($data['sort_order'] ?? 0));
         $faq->setIsActive((bool) ($data['is_active'] ?? false));
     }
