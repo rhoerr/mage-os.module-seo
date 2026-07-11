@@ -73,7 +73,7 @@ $offer = array_merge($offer, $policyAdditions);
 }
 ```
 
-The `@id` (`{storeBaseUrl}/#merchant-return-policy`) anchors the policy as a named entity. Future optimisation: define the full node once in the `OrganizationProvider` / `LocalBusinessProvider` output and reference it only by `@id` in product pages. For Phase 1, inline the full object — correct and simpler.
+The `@id` (`{storeBaseUrl}/#merchant-return-policy`) anchors the policy as a named entity. Future optimisation: define the full node once in the `OrganisationProvider` / `LocalBusinessProvider` output and reference it only by `@id` in product pages. For Phase 1, inline the full object — correct and simpler.
 
 ### Config fields (return policy group)
 

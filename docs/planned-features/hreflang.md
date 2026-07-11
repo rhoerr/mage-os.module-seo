@@ -306,7 +306,7 @@ Three queries total for the entire catalogue, regardless of product/category cou
 - Returns `404` if hreflang is disabled in config OR if there is only one active store view (nothing useful to output).
 - Returns the generated XML with `Content-Type: application/xml`.
 - Sets `Cache-Control: public, max-age=86400` (24-hour TTL — longer than llms.txt, since the sitemap changes less frequently).
-- Uses a dedicated Varnish/FPC cache tag `RS_HREFLANG_SITEMAP` for targeted invalidation.
+- Uses a dedicated Varnish/FPC cache tag `MAGEOS_SEO_HREFLANG_SITEMAP` for targeted invalidation.
 
 ### Cache invalidation
 
@@ -411,7 +411,7 @@ Inject the hreflang block into `<head>` immediately after the canonical block:
 
 **`<head>` block:** Fully FPC-cacheable. URL rewrites are not session-dependent. Output varies only by URL, which is already the FPC cache key. No `cacheable="false"` — ever.
 
-**Sitemap:** 24-hour TTL. Cache tag `RS_HREFLANG_SITEMAP` invalidated by the four observers listed above. If a store's base URL or locale code changes in config, the admin must flush the full page cache manually (same as all config-driven head content changes).
+**Sitemap:** 24-hour TTL. Cache tag `MAGEOS_SEO_HREFLANG_SITEMAP` invalidated by the four observers listed above. If a store's base URL or locale code changes in config, the admin must flush the full page cache manually (same as all config-driven head content changes).
 
 ---
 

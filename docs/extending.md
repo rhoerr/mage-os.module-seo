@@ -201,8 +201,10 @@ All providers declare handles via `getHandles()`. The compositor checks these ag
 | `catalog_category_view` | Category page |
 | `cms_page_view` | CMS pages |
 | `cms_index_index` | Home page |
-| `makers_profile_view` | Vendor profile page (Sellers module) |
-| `makers_index_index` | Vendor directory page (Sellers module) |
+
+Bridge modules use their own handles (e.g. a marketplace module's vendor profile page) both for
+matching in `getHandles()` and for excluding pages from built-in providers such as
+`BreadcrumbListProvider` (`excludedHandles` DI argument).
 
 You can return multiple handles from `getHandles()` — the provider runs if any of them match.
 

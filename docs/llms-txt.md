@@ -60,32 +60,49 @@ Everything in `/llms.txt`, plus:
 
 ---
 
-## Setting up the clean URLs
+## Clean URLs
 
-The module's Magento routes respond at:
-- `/llms/llms_txt/index`
-- `/llms-full/llms_full/index`
-
-To serve them at the expected `/llms.txt` and `/llms-full.txt` paths, add two URL rewrites in **Marketing → URL Rewrites**:
-
-| Request path | Target path | Redirect type |
-|---|---|---|
-| `llms.txt` | `llms/llms_txt/index` | No (custom) |
-| `llms-full.txt` | `llms-full/llms_full/index` | No (custom) |
-
-Set **Redirect Type** to **No** (not a 301/302) so the content is served, not redirected.
+No setup is required: a custom router serves `/llms.txt`, `/llms-full.txt` and
+`/llms.jsonl` directly. Do **not** add manual URL rewrites for these paths — the
+internal controller URLs (`/mageos-seo/...`) 301-redirect to the canonical paths,
+so a rewrite would fight the router.
 
 ---
 
-## Cache
+## Generation & cache
 
-Both documents are served with `Cache-Control: public, max-age=3600`. Varnish and the FPC cache them for one hour.
+The documents are **pre-generated to files** (default `var/mageos_seo/store_<id>/`;
+configurable via `mageos_seo_general/feeds/storage_dir` for multi-server deployments
+with a shared mount), mirroring core `Magento_Sitemap`. Two background processes
+write them:
 
-Cache is invalidated automatically when:
-- A category is saved (`catalog_category_save_after` event → `InvalidateLlmsTxtCache` observer)
-The cache tag `MAGEOS_SEO_LLMS` is used for `/llms.txt` and `MAGEOS_SEO_LLMS_FULL` for `/llms-full.txt`.
+- the `mageosSeoFeedRegenerate` **queue consumer** rebuilds a feed group whenever it
+  is invalidated (started by the default `consumers_runner` cron, or your process
+  manager e.g. supervisor). Duplicate invalidations are collapsed: at most one build
+  per feed group is queued at a time, and changes arriving during a build queue
+  exactly one follow-up rebuild;
+- the `mageos_seo_regenerate_feeds` **cron job** (nightly) does a full rebuild as a
+  safety net for changes that carry no invalidation event.
 
-To manually flush: flush the full page cache (`bin/magento cache:flush full_page`), or purge the specific URLs via your CDN or Varnish admin.
+Web requests **never** build the documents. When a file is missing, the controller
+queues a rebuild and answers `503` with `Retry-After` until the consumer has written
+it. Requests with query strings — and the internal `/mageos-seo/...` controller
+URLs — are 301-redirected to the canonical path so they cannot be used to force
+cache misses.
+
+On top of the files, responses are served with `Cache-Control: public, max-age=3600`;
+Varnish and the FPC cache them for one hour using the tags `MAGEOS_SEO_LLMS`
+(`/llms.txt`) and `MAGEOS_SEO_LLMS_FULL` (`/llms-full.txt`).
+
+Feeds are invalidated automatically (files deleted + FPC/Varnish purged by tag) when:
+
+- a category is saved (`catalog_category_save_after` → `InvalidateLlmsTxtCache` observer),
+- the Organisation settings are saved,
+- a FAQ is saved or deleted.
+
+To manually regenerate: run `bin/magento queue:consumers:start mageosSeoFeedRegenerate
+--max-messages=10` after deleting the files, or wait for the nightly cron; flush cached
+responses with `bin/magento cache:flush full_page` or a CDN/Varnish purge.
 
 ---
 

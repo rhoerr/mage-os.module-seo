@@ -41,7 +41,7 @@ Built-in providers, in order:
 
 | Provider | Handle | Output |
 |---|---|---|
-| `OrganizationProvider` | `*` | Organization node + WebSite node with SearchAction |
+| `OrganisationProvider` | `*` | Organization node + WebSite node with SearchAction |
 | `BreadcrumbListProvider` | `*` | BreadcrumbList (reads layout breadcrumbs block) |
 | `CategorySchemaProvider` | `catalog_category_view` | CollectionPage + optional ItemList |
 | `ProductSchemaProvider` | `catalog_product_view` | Dispatches to template builder pool |

@@ -2,7 +2,7 @@
 
 Tracks delivery against [`planned-features/_roadmap.md`](planned-features/_roadmap.md). Gate suite per
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml): phpcs, php-cs-fixer, PHPStan, PHPUnit unit,
-integration (CI), infection MSI ≥ 75 (CI), `setup:di:compile` (CI).
+integration (CI), infection MSI ≥ 54 enforced (CI; 75 is the target as builder/controller coverage grows), `setup:di:compile` (CI).
 
 Legend: ✅ done & green · 🟡 in progress · ⏳ pending · CI = validated only in CI (no full Magento /
 coverage driver locally).
@@ -43,8 +43,8 @@ provider and it applies automatically. This exact hook is fully exercised only b
 
 ### 0c — On-page foundation 🟡 (mostly done; pagination delivered separately above)
 - ✅ `@id` foundation: new `Model/StructuredData/OrganisationId` (single source of
-  `{orgUrl}/#organization`). `OrganizationProvider` migrated to it via an optional null-defaulted
-  ctor arg — output identical, existing `OrganizationProviderTest` untouched and green. Ready for the
+  `{orgUrl}/#organization`). `OrganisationProvider` migrated to it via an optional null-defaulted
+  ctor arg — output identical, existing `OrganisationProviderTest` untouched and green. Ready for the
   Phase 3 consumers (WebSite/LocalBusiness/Event/BlogPosting). Test: `OrganisationIdTest`.
 - ✅ OG/Twitter (site-level): new `Model/MetaTag/Provider/SiteMetaProvider` (`['*']`) emits
   `og:site_name`, `og:locale`, `twitter:card=summary_large_image`. Wired into the MetaTag compositor.
@@ -111,7 +111,7 @@ DI smoke tests added in `DiWiringTest`.
 - `Model/Hreflang/SitemapGenerator` — one `<url>` block per entity per store view, each with the full
   `<xhtml:link>` set; home pages from store base URLs; ENT_XML1 escaping.
 - `Controller/Hreflangsitemap/Index` (404 when disabled or <2 stores; `Cache-Control` 24h +
-  `X-Magento-Tags: RS_HREFLANG_SITEMAP`) served via `Model/Router/HreflangSitemapRouter` (clean
+  `X-Magento-Tags: MAGEOS_SEO_HREFLANG_SITEMAP`) served via `Model/Router/HreflangSitemapRouter` (clean
   `/hreflang-sitemap.xml`, mirrors the llms router).
 - `Config::isHreflangSitemapEnabled()` + `hreflang/sitemap_enabled` config/admin field.
 - `Observer/InvalidateHreflangSitemapCache` on product/category/cms/store save (etc/events.xml).
@@ -128,7 +128,7 @@ DI smoke tests added in `DiWiringTest`.
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |
 | XML well-formed | ✅ |
-| Infection MSI ≥ 75 | CI (tests written mutation-first) |
+| Infection MSI ≥ 54 (enforced gate; 75 target) | CI (tests written mutation-first) |
 | Integration + di:compile | CI |
 
 ## Phase 3 — AEO content + identity ✅
@@ -146,22 +146,22 @@ DI smoke tests added in `DiWiringTest`.
 - Tests: `ArticleSchemaProviderTest`, `EventSchemaProviderTest`, `SpeakableProviderTest`.
 
 ### 3b — LocalBusiness expansion ✅ (opening-hours deferred)
-- 10 nullable columns on `mage-os_seo_organisation` (street/locality/region/postcode/country,
+- 10 nullable columns on `mageos_seo_organisation` (street/locality/region/postcode/country,
   telephone, email, latitude, longitude, price_range) + db_schema_whitelist; `OrganisationInterface`
   constants + `getAddress`/`getLatitude`/`getLongitude`/`getTelephone`/`getEmail`/`getPriceRange`
   getters + `setLocalPresence(array)`; model impl.
 - **No separate LocalBusinessProvider** — the structured-data Compositor collects-all (no
-  precedence), so a second org provider would duplicate the node. Instead `OrganizationProvider`
+  precedence), so a second org provider would duplicate the node. Instead `OrganisationProvider`
   emits `address` (PostalAddress), `geo` (GeoCoordinates), `telephone`, `email`, `priceRange` when
   populated; `@type` comes from the existing `org_type` (set it to Store/LocalBusiness subtype).
 - Admin "Local Presence" fieldset in the Organisation form + Save controller mapping + DataProvider
   hydration.
-- Tests: `OrganizationProviderTest` extended (populated/empty/geo-needs-both cases).
+- Tests: `OrganisationProviderTest` extended (populated/empty/geo-needs-both cases).
 - ⏳ DEFERRED: `openingHoursSpecification` (needs a dynamic-rows admin UI) — own follow-up.
 
 ### 3c — FAQ subsystem 🟡 (engine done; rendering surface + admin + PB pending)
 
-**3c-1 engine ✅** — `mage-os_seo_faq` table (identifier, store_id, question, answer, sort_order,
+**3c-1 engine ✅** — `mageos_seo_faq` table (identifier, store_id, question, answer, sort_order,
 is_active) + whitelist; `Model/Faq/Repository` (raw-connection read by identifier, store 0 + store
 fallback, ordered); `Api/FaqSourceProviderInterface` + `Model/Faq/Source/TableFaqSource` +
 `Model/Faq/SourcePool` (collect-all extension point); `Api/FaqCollectorInterface` +
@@ -185,11 +185,11 @@ no typed setEntityId to stay compatible) + `Model/Faq` (AbstractModel) + `Model/
 `Test/Integration/Model/FaqRepositoryTest` (CRUD round-trip + read-by-identifier, CI-run).
 
 **3c-3b admin grid/form ✅** — ACL `MageOS_Seo::faq` + menu (Marketing → SEO → FAQ Manager).
-Controllers `Adminhtml/Faq/{Index,NewAction,Edit,Save,Delete}` (admin frontName `rs_seo`). Listing UI
+Controllers `Adminhtml/Faq/{Index,NewAction,Edit,Save,Delete}` (admin frontName `mageos_seo`). Listing UI
 component (`mageos_seo_faq_listing`) with grid collection virtualType + CollectionFactory mapping in
 di.xml; `Ui/Component/Listing/Column/FaqActions` for edit/delete. Form UI component
 (`mageos_seo_faq_form`) + `Ui/DataProvider/Faq/FormDataProvider` (data-persistor fallback) + Add/Back/
-Save/Delete button blocks. Layouts `rs_seo_faq_index|edit`. FAQs now fully manageable in admin.
+Save/Delete button blocks. Layouts `mageos_seo_faq_index|edit`. FAQs now fully manageable in admin.
 
 **3c-3c native Page Builder content type ✅** — `view/adminhtml/pagebuilder/content_type/mageos_seo_faq.xml`
 (menu_section `mageos_seo`) + edit form (`pagebuilder_mageos_seo_faq_form` extending
@@ -215,7 +215,7 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |
 | XML well-formed | ✅ |
-| Infection MSI ≥ 75 | CI (Phases 0–2 confirmed green in CI; tests written mutation-first) |
+| Infection MSI ≥ 54 (enforced gate; 75 target) | CI (Phases 0–2 confirmed green in CI; tests written mutation-first) |
 | Integration + di:compile | CI (Phases 0–2 confirmed green in CI) |
 
 ## Phase 4 — GEO ✅ (llms.jsonl + AI-bot robots + UCP/well-known done)
@@ -224,10 +224,10 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 - `Api/JsonlLineProviderInterface` (bridge pool for extra catalog lines) + `Model/LlmsJsonl/ProductLineBuilder`
   (compact JSON-LD Product node per product) + `Model/LlmsJsonl/JsonlBuilder` (enabled-product
   collection → NDJSON; appends provider lines). `Controller/Llmsjsonl/Index` (404 when disabled;
-  `Content-Type: application/x-ndjson`; `X-Magento-Tags: RS_LLMS_JSONL`). Clean URL `/llms.jsonl` via
+  `Content-Type: application/x-ndjson`; `X-Magento-Tags: MAGEOS_SEO_LLMS_JSONL`). Clean URL `/llms.jsonl` via
   the existing `LlmsTxtRouter` (added route). `Config::isLlmsJsonlEnabled()` + `llms_txt/jsonl_enabled`
   (off by default) config/admin field. **Dedicated** `Observer/InvalidateLlmsJsonlCache` on
-  `catalog_product_save_after` (purges only `RS_LLMS_JSONL` — does NOT over-purge RS_LLMS/RS_LLMS_FULL).
+  `catalog_product_save_after` (purges only `MAGEOS_SEO_LLMS_JSONL` — does NOT over-purge MAGEOS_SEO_LLMS/MAGEOS_SEO_LLMS_FULL).
   di.xml line-provider pool. Tests: `ProductLineBuilderTest` + DI smoke (JsonlBuilder is factory-based →
   integration/CI-validated, like the other repositories).
 
@@ -243,7 +243,7 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 - Config: `ai_robots/enabled` (0) + `ai_robots/disallowed` (CCBot,Bytespider) → `Config::isAiRobotsEnabled()`,
   `Config::getAiDisallowedBots()` (CSV → trimmed string[]). `system.xml` `ai_robots` group (showInDefault).
 - `composer.json` now requires `magento/module-robots` (we sequence it in `module.xml` and plug onto its
-  `Robots` model); di.xml plugin `rs_seo_ai_robots_directives` sortOrder 10.
+  `Robots` model); di.xml plugin `mageos_seo_ai_robots_directives` sortOrder 10.
 - Tests: `AiBotsTest` (major agents present, value/label non-empty, unique), `AppendAiDirectivesPluginTest`
   (disabled → empty + no config read; disallow vs allow split; empty list → all-allow; `afterGetData`
   passthrough when disabled and append-with-spacing when enabled).
@@ -291,5 +291,5 @@ native PB content type. PB/JS/Knockout + the Filter\Template render plugin are C
 | php-cs-fixer | ✅ 0 |
 | PHPStan | ✅ 0 |
 | XML well-formed | ✅ |
-| Infection MSI ≥ 75 | CI (tests mutation-first) |
+| Infection MSI ≥ 54 (enforced gate; 75 target) | CI (tests mutation-first) |
 | Integration + di:compile | ✅ CI-confirmed (Phases 0–4 all green) |

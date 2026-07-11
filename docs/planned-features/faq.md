@@ -123,11 +123,11 @@ block/ESI caching.
 
 ## Data model
 
-New table `mage-os_seo_faq` (+ optional `mage-os_seo_faq_group`) following the schema in
+New table `mageos_seo_faq` (+ optional `mageos_seo_faq_group`) following the schema in
 [multistore-aeo.md](multistore-aeo.md) Feature 1 (entity_id, question, answer, store_id, page_type,
 page_id, sort_order, is_active). Register columns in `etc/db_schema_whitelist.json`. Store scoping:
 `store_id=0` = all stores; `store_id=N` overrides for that store view — same convention as
-`mage-os_seo_category_config`.
+`mageos_seo_category_config`.
 
 Admin: grid + form UI components, ACL resource, menu item under **MageOS → SEO → FAQ Manager**
 (pattern: existing Organisation admin UI, `Ui/DataProvider/*`, `view/adminhtml/ui_component/*`).

@@ -51,7 +51,7 @@ FAQ rich results and "People Also Ask" panels are the most direct AEO signal: if
 
 ### Data model
 
-New table: `mage-os_seo_faq`
+New table: `mageos_seo_faq`
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -177,7 +177,7 @@ The existing `Organisation` model already stores name, description, logo, and so
 
 ### New Organisation columns
 
-Extend `mage-os_seo_organisation` with new nullable columns (all default null so existing data is unaffected):
+Extend `mageos_seo_organisation` with new nullable columns (all default null so existing data is unaffected):
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -249,7 +249,7 @@ When `schema_type` is a `LocalBusiness` subtype, outputs the enriched node:
 }
 ```
 
-This replaces (rather than supplements) the existing `OrganizationProvider` output when LocalBusiness fields are populated. `LocalBusinessProvider` should be registered at higher `sortOrder` than the existing `OrganizationProvider` in di.xml so it wins when `schema_type` is set.
+This replaces (rather than supplements) the existing `OrganisationProvider` output when LocalBusiness fields are populated. `LocalBusinessProvider` should be registered at higher `sortOrder` than the existing `OrganisationProvider` in di.xml so it wins when `schema_type` is set.
 
 ---
 
@@ -550,7 +550,7 @@ New shared infrastructure required:
 
 | Component | Purpose |
 | --- | --- |
-| `mage-os_seo_faq` table | FAQ persistence |
+| `mageos_seo_faq` table | FAQ persistence |
 | `FaqRepository` | FAQ data access, caching, store-scoped loading |
 | Admin UI for FAQs | Editorial workflow |
 | `AggregateRatingProviderInterface` | Extensibility hook for third-party review systems |
@@ -578,11 +578,11 @@ New shared infrastructure required:
 | `Controller/Adminhtml/Faq/Delete.php` | Delete action |
 | `Ui/DataProvider/Faq/ListingDataProvider.php` | Grid data provider |
 | `Ui/DataProvider/Faq/Form/FaqDataProvider.php` | Form data provider |
-| `view/adminhtml/ui_component/mage-os_seo_faq_listing.xml` | Grid UI component |
-| `view/adminhtml/ui_component/mage-os_seo_faq_form.xml` | Form UI component |
-| `view/adminhtml/layout/mage-os_seo_faq_index.xml` | Grid layout |
-| `view/adminhtml/layout/mage-os_seo_faq_new.xml` | New form layout |
-| `view/adminhtml/layout/mage-os_seo_faq_edit.xml` | Edit form layout |
+| `view/adminhtml/ui_component/mageos_seo_faq_listing.xml` | Grid UI component |
+| `view/adminhtml/ui_component/mageos_seo_faq_form.xml` | Form UI component |
+| `view/adminhtml/layout/mageos_seo_faq_index.xml` | Grid layout |
+| `view/adminhtml/layout/mageos_seo_faq_new.xml` | New form layout |
+| `view/adminhtml/layout/mageos_seo_faq_edit.xml` | Edit form layout |
 
 ### Schema providers
 
@@ -607,7 +607,7 @@ New shared infrastructure required:
 
 | File | Change |
 | --- | --- |
-| `etc/db_schema.xml` | Add `mage-os_seo_faq` table; add 12 new columns to `mage-os_seo_organisation` |
+| `etc/db_schema.xml` | Add `mageos_seo_faq` table; add 12 new columns to `mageos_seo_organisation` |
 | `etc/db_schema_whitelist.json` | Register new table and new Organisation columns |
 | `etc/adminhtml/system.xml` | Add `aeo` config group (WebSite schema toggle, Speakable toggle + selectors) |
 | `etc/config.xml` | Defaults for new config paths |
@@ -615,7 +615,7 @@ New shared infrastructure required:
 | `Model/Config.php` | Add getters: `isWebsiteSchemaEnabled`, `isSpeakableEnabled`, `getSpeakableCssSelectors`, `isFaqSchemaEnabled` |
 | `Model/Organisation.php` | Getters/setters for 12 new address/geo/hours fields |
 | `Api/Data/OrganisationInterface.php` | Constants and interface methods for new fields |
-| `Model/StructuredData/Provider/OrganizationProvider.php` | Delegate to `LocalBusinessProvider` when schema_type is set |
+| `Model/StructuredData/Provider/OrganisationProvider.php` | Delegate to `LocalBusinessProvider` when schema_type is set |
 | `Model/Product/Builder/AbstractBuilder.php` | Accept `AggregateRatingProviderInterface`, call in `buildBase()` |
 | `etc/adminhtml/menu.xml` | Add FAQ Manager menu item under MageOS → SEO |
 | `etc/adminhtml/acl.xml` | Add FAQ resource permissions |
@@ -650,7 +650,7 @@ Event       → organizer: { @id: .../#organisation }
 Product     → (via brand or seller field, future)
 ```
 
-The `OrganizationProvider` / `LocalBusinessProvider` must declare `@id` consistently. Add `getOrganisationId(int $storeId): string` to `Model/Config.php` (returns `{baseUrl}/#organisation`) — all providers call this method rather than constructing the ID independently.
+The `OrganisationProvider` / `LocalBusinessProvider` must declare `@id` consistently. Add `getOrganisationId(int $storeId): string` to `Model/Config.php` (returns `{baseUrl}/#organisation`) — all providers call this method rather than constructing the ID independently.
 
 ---
 

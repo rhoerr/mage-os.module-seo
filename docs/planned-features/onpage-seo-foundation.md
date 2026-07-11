@@ -9,17 +9,17 @@ the `@id` foundation every AEO feature depends on. Build alongside the
 ## 1. Organisation `@id` foundation (blocks Phase 3)
 
 AEO relies on linking all schema nodes to one Organisation entity by `@id`, so an answer engine that
-resolves the Organisation once trusts every node that references it. Today `OrganizationProvider`
+resolves the Organisation once trusts every node that references it. Today `OrganisationProvider`
 constructs `{baseUrl}/#organization` inline; other providers can't reuse it consistently.
 
 - Add `Config::getOrganisationId(int $storeId): string` returning `{baseUrl}/#organisation` (single
   canonical form). Use the store base URL via `StoreManagerInterface` as existing providers do.
-- Refactor `OrganizationProvider` to use it. Every future provider (WebSite, LocalBusiness, Event,
+- Refactor `OrganisationProvider` to use it. Every future provider (WebSite, LocalBusiness, Event,
   BlogPosting, FAQ) references the **same** id — see
   [multistore-aeo.md](multistore-aeo.md) and [faq.md](faq.md).
 
 > Note the existing node uses `#organization` (US spelling) while the module/table use
-> `organisation`. Pick one canonical `@id` string and migrate `OrganizationProvider` to it in the
+> `organisation`. Pick one canonical `@id` string and migrate `OrganisationProvider` to it in the
 > same change so all nodes agree. Recommend `#organization` (matches schema.org examples and the
 > current emitted value) to avoid changing live output.
 
@@ -57,7 +57,7 @@ Category listing pages with `?p=N` (and layered-nav filters) create duplicate co
 | Action | File |
 |--------|------|
 | EDIT | `Model/Config.php` — `getOrganisationId()` (+ pagination/twitter getters) |
-| EDIT | `Model/StructuredData/Provider/OrganizationProvider.php` — use `getOrganisationId()` |
+| EDIT | `Model/StructuredData/Provider/OrganisationProvider.php` — use `getOrganisationId()` |
 | EDIT | `Model/MetaTag/Provider/{ProductMetaProvider,CategoryMetaProvider,CmsPageMetaProvider}.php` |
 | EDIT | `view/frontend/templates/seo/meta-tags.phtml` (only if new attribute handling needed) |
 | EDIT | `Model/Canonical/CanonicalUrlManager.php` (or a new pagination-aware caller) |
@@ -74,4 +74,4 @@ Category listing pages with `?p=N` (and layered-nav filters) create duplicate co
 
 Standard suite — see [_roadmap.md](_roadmap.md#quality-gates--definition-of-done-every-phase).
 The `@id` migration changes emitted JSON-LD, so update any existing
-`OrganizationProviderTest` expectations in the same change to keep unit + integration green.
+`OrganisationProviderTest` expectations in the same change to keep unit + integration green.

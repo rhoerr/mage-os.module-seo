@@ -60,9 +60,9 @@ After installing and running `bin/magento setup:upgrade`:
 
 | Table | Purpose |
 |---|---|
-| `mage-os_seo_organisation` | Organisation identity settings, one row per scope (store/website/default) |
-| `mage-os_seo_category_config` | Per-category SEO overrides, one row per category per store view |
-| `mage-os_seo_product_override` | Per-product field overrides, one row per product per store view |
+| `mageos_seo_organisation` | Organisation identity settings, one row per scope (store/website/default) |
+| `mageos_seo_category_config` | Per-category SEO overrides, one row per category per store view |
+| `mageos_seo_product_override` | Per-product field overrides, one row per product per store view |
 
 ---
 
@@ -78,10 +78,10 @@ All paths live under `mageos_seo_general/`:
 | `mageos_seo_general/structured_data/category_item_list_enabled` | 1 | ItemList on category pages |
 | `mageos_seo_general/structured_data/category_item_list_max` | 36 | Max items in ItemList |
 | `mageos_seo_general/structured_data/has_variant_max` | 50 | Max hasVariant entries (global only) |
-| `mageos_seo_general/structured_data/price_valid_until_months` | 12 | Months ahead for priceValidUntil |
+| `mageos_seo_general/structured_data/price_valid_until_months` | 12 | Months ahead for priceValidUntil when no special-price end date applies (0 = omit) |
 | `mageos_seo_general/llms_txt/enabled` | 1 | Serve /llms.txt |
 | `mageos_seo_general/llms_txt/full_enabled` | 1 | Serve /llms-full.txt |
-| `mageos_seo_general/robots_meta/product_default` | INDEX,FOLLOW | Default for product pages |
-| `mageos_seo_general/robots_meta/category_default` | INDEX,FOLLOW | Default for category pages |
+| `mageos_seo_general/robots_meta/product_default` | *(empty)* | Default for product pages (empty = Magento's Design → Search Engine Robots setting) |
+| `mageos_seo_general/robots_meta/category_default` | *(empty)* | Default for category pages (empty = Magento's Design → Search Engine Robots setting) |
 
 All paths support store-view and website scope except `has_variant_max`, which is global only.

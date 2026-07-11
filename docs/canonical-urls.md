@@ -10,11 +10,11 @@ Magento adds a canonical tag automatically for product and category pages. Howev
 
 `CanonicalUrlManager::setCanonical()` solves this by:
 
-1. Scanning the page asset collection for any existing canonical that matches the entity's URL key.
-2. Removing the default Magento canonical.
-3. Adding the correct canonical URL.
+1. Removing every existing canonical link asset (matched by asset content type `canonical`,
+   never by URL pattern — the asset collection also holds all CSS/JS/image assets).
+2. Adding the correct canonical URL.
 
-This service is the single authoritative place for canonical manipulation across all MageOS SEO module components.
+This service is the single authoritative place for canonical manipulation across all MageOS SEO module components. Nothing inside MageOS_Seo itself calls it — it is a bridge API for sibling modules (e.g. product-variant URL modules).
 
 ---
 
@@ -22,10 +22,20 @@ This service is the single authoritative place for canonical manipulation across
 
 | Page type | Who sets the canonical | URL used |
 |---|---|---|
-| Product page (no variant) | `ProductRobotsMetaPlugin` / `Block\Canonical` | Product URL from `getProductUrl()` |
-| Product page (variant active) | `ProductVariantUrlSeo` enricher | Variant-specific URL |
-| Category page | `Block\Canonical` | Category URL |
-| CMS / home page | Magento core | Standard Magento canonical |
+| Product page (no variant) | Magento core (`catalog/seo/product_canonical_tag`) | Product URL |
+| Product page (variant active) | Bridge module via `CanonicalUrlManager` | Variant-specific URL |
+| Category page | Magento core (`catalog/seo/category_canonical_tag`) | Category URL |
+| Home page | `Block\Canonical` (fallback) | Store base URL |
+| CMS page | `Block\Canonical` (fallback) | Store base URL + page identifier |
+
+The fallback block only renders on the home page and `cms_page_view`, and only when no other
+canonical asset is already present (detected by asset content type). It deliberately stays off
+search, cart, checkout and account pages — canonicalising those URLs would legitimise duplicate
+URLs instead of consolidating them — and never derives URLs from the request Host header.
+
+Core's product/category canonical tags are **disabled by default** in Magento; enable them under
+**Stores → Configuration → Catalog → Catalog → Search Engine Optimization** if you want catalog
+canonicals and no bridge module manages them.
 
 ---
 
@@ -36,12 +46,13 @@ This service is the single authoritative place for canonical manipulation across
 ```php
 $canonicalManager->setCanonical(
     $canonicalUrl,   // the URL to use as canonical
-    $pageConfig,     // Magento\Framework\View\Page\Config
-    $urlKey          // the entity's URL key (used to find and remove the default)
+    $pageConfig      // Magento\Framework\View\Page\Config
 );
 ```
 
-The `$urlKey` parameter is used to identify the default Magento canonical in the asset collection. The asset identifier typically ends with `/{urlKey}` or `/{urlKey}.html`. The manager removes any asset whose identifier ends with either of those patterns, then adds the new canonical.
+The manager removes every asset in the page asset collection whose content type is `canonical`
+(this is how both core and this module register canonical link assets), then adds the new one.
+The legacy third `$urlKey` parameter is retained for backward compatibility but ignored.
 
 ---
 
@@ -62,7 +73,10 @@ With the manager, the first one is removed before the second is added, so only o
 
 ## CMS pages
 
-Canonical management for CMS pages is handled by Magento's core CMS module. The `CmsPageResolver` reads the current CMS page and resolves its canonical URL using the standard Magento approach. This does not interact with `CanonicalUrlManager`.
+Magento core does not emit canonicals for CMS pages, so `Block\Canonical` covers them: it
+resolves the current page via `CmsPageResolver` and builds the canonical from the store base URL
+plus the page identifier (the home page canonicalises to the bare base URL). This does not
+interact with `CanonicalUrlManager`.
 
 ---
 
