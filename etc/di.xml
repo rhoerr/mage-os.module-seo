@@ -32,7 +32,7 @@
     <virtualType name="MageOS\Seo\Model\ResourceModel\Faq\Grid\Collection"
                  type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
-            <argument name="mainTable" xsi:type="string">mage-os_seo_faq</argument>
+            <argument name="mainTable" xsi:type="string">mageos_seo_faq</argument>
             <argument name="resourceModel" xsi:type="string">MageOS\Seo\Model\ResourceModel\Faq</argument>
         </arguments>
     </virtualType>
@@ -55,8 +55,8 @@
         <arguments>
             <argument name="providers" xsi:type="array">
                 <!-- Organisation + WebSite — runs on every page -->
-                <item name="organization"
-                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\OrganizationProvider</item>
+                <item name="organisation"
+                      xsi:type="object">MageOS\Seo\Model\StructuredData\Provider\OrganisationProvider</item>
 
                 <!-- BreadcrumbList — runs on every page, reads layout breadcrumbs -->
                 <item name="breadcrumbList"
@@ -93,6 +93,19 @@
             </argument>
         </arguments>
     </type>
+
+    <!--
+        Pages that manage their own breadcrumb schema can be excluded by layout
+        handle. Bridge modules append handles via their own di.xml:
+
+        <type name="MageOS\Seo\Model\StructuredData\Provider\BreadcrumbListProvider">
+            <arguments>
+                <argument name="excludedHandles" xsi:type="array">
+                    <item name="vendor_profile" xsi:type="string">vendor_profile_view</item>
+                </argument>
+            </arguments>
+        </type>
+    -->
 
     <!-- ═══════════════════════════════════════════════════════════════════
          META TAG COMPOSITOR — built-in providers
@@ -319,52 +332,14 @@
 
     <!-- AI crawler directives appended to robots.txt -->
     <type name="Magento\Robots\Model\Robots">
-        <plugin name="rs_seo_ai_robots_directives"
+        <plugin name="mageos_seo_ai_robots_directives"
                 type="MageOS\Seo\Plugin\Robots\AppendAiDirectivesPlugin"
                 sortOrder="10"/>
     </type>
 
-    <!-- Category SEO tab persistence -->
-    <type name="Magento\Catalog\Api\CategoryRepositoryInterface">
-        <plugin name="rs_seo_category_save_seo_config"
-                type="MageOS\Seo\Plugin\Catalog\Category\SaveSeoConfigPlugin"
-                sortOrder="10"/>
-    </type>
-
-    <!-- Product SEO tab persistence -->
-    <type name="Magento\Catalog\Api\ProductRepositoryInterface">
-        <plugin name="rs_seo_product_save_seo_overrides"
-                type="MageOS\Seo\Plugin\Catalog\Product\SaveSeoOverridesPlugin"
-                sortOrder="10"/>
-    </type>
-
-    <!-- ═══════════════════════════════════════════════════════════════════
-         ADMIN UI: CATEGORY + PRODUCT FORM MODIFIERS
-         ═══════════════════════════════════════════════════════════════════ -->
-
-    <!-- Register the category SEO tab modifier -->
-    <type name="Magento\Catalog\Ui\DataProvider\Category\Form\Modifier\Pool">
-        <arguments>
-            <argument name="modifiers" xsi:type="array">
-                <item name="rs_seo_category_modifier" xsi:type="array">
-                    <item name="class"     xsi:type="string">MageOS\Seo\Ui\DataProvider\Category\Form\Modifier\SeoModifier</item>
-                    <item name="sortOrder" xsi:type="number">200</item>
-                </item>
-            </argument>
-        </arguments>
-    </type>
-
-    <!-- Register the product SEO tab modifier -->
-    <type name="Magento\Catalog\Ui\DataProvider\Product\Form\Modifier\Pool">
-        <arguments>
-            <argument name="modifiers" xsi:type="array">
-                <item name="rs_seo_product_modifier" xsi:type="array">
-                    <item name="class"     xsi:type="string">MageOS\Seo\Ui\DataProvider\Product\Form\Modifier\SeoModifier</item>
-                    <item name="sortOrder" xsi:type="number">200</item>
-                </item>
-            </argument>
-        </arguments>
-    </type>
+    <!-- Category/product SEO tab persistence plugins and the admin form modifiers
+         are registered in etc/adminhtml/di.xml: they read admin form POST data and
+         must not run on REST, GraphQL, import or cron saves. -->
 
     <!-- ═══════════════════════════════════════════════════════════════════
          SHARED SINGLETONS
