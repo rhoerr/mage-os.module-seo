@@ -62,8 +62,21 @@ class GenericProductBuilder extends AbstractBuilder
             }
         }
 
+        // GTIN goes through validation: the matching gtin8/12/13/14 property is
+        // emitted only when the value's length and GS1 check digit are valid.
+        if (\in_array('gtin13', $enabledFields, true)) {
+            $gtin = (string) ($overrides['gtin13'] ?? '');
+            if ($gtin === '') {
+                $gtin = $this->attr($product, 'gtin13')
+                    ?: $this->attr($product, 'barcode')
+                    ?: $this->attr($product, 'ean');
+            }
+            if ($gtin !== '') {
+                $schema = $this->applyGtin($schema, $gtin);
+            }
+        }
+
         $optionalScalarFields = [
-            'gtin13'          => ['gtin13', 'barcode', 'ean'],
             'mpn'             => ['mpn'],
             'color'           => ['color', 'colour'],
             'material'        => ['material'],

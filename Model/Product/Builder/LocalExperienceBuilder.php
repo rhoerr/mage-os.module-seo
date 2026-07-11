@@ -60,29 +60,38 @@ class LocalExperienceBuilder extends AbstractBuilder
             }
         }
 
+        // location/duration/organizer are Event properties, not Product properties;
+        // on this Product node they are expressed as additionalProperty entries.
+        // Experiences with real schedules belong in a dedicated Event node via the
+        // EventSchemaProvider pool.
         if (\in_array('location', $enabledFields, true)) {
             $location = $overrides['location'] ?? $this->attr($product, 'location') ?: $this->attr($product, 'venue');
             if ($location !== '') {
-                $schema['location'] = ['@type' => 'Place', 'name' => $location];
+                $schema = $this->addAdditionalProperty($schema, 'location', $location);
             }
         }
 
         if (\in_array('duration', $enabledFields, true)) {
             $duration = $overrides['duration'] ?? $this->attr($product, 'duration');
             if ($duration !== '') {
-                $schema['duration'] = $duration;
+                $schema = $this->addAdditionalProperty($schema, 'duration', $duration);
             }
         }
 
         // organizer — expected from SellersSeo bridge via overrides
         if (\in_array('organizer', $enabledFields, true) && !empty($overrides['organizer'])) {
-            $schema['organizer'] = $overrides['organizer'];
+            $organizer = $overrides['organizer'];
+            $schema = $this->addAdditionalProperty(
+                $schema,
+                'organizer',
+                \is_array($organizer) ? json_encode($organizer) : $organizer
+            );
         }
 
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 

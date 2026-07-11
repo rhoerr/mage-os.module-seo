@@ -58,16 +58,19 @@ class PetBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
+        // Target species and nutrition have no valid Product property (PeopleAudience
+        // is for humans; nutritionInformation belongs to MenuItem/DietarySupplement),
+        // so both are expressed as additionalProperty entries.
         if (\in_array('targetSpecies', $enabledFields, true)) {
             $species = $overrides['targetSpecies']
                 ?? $this->attr($product, 'pet_species')
                 ?: $this->attr($product, 'target_species');
             if ($species !== '') {
-                $schema['audience'] = ['@type' => 'PeopleAudience', 'suggestedGender' => $species];
+                $schema = $this->addAdditionalProperty($schema, 'targetSpecies', $species);
             }
         }
 
@@ -75,9 +78,11 @@ class PetBuilder extends AbstractBuilder
             $raw = $overrides['nutritionInformation'] ?? $this->attr($product, 'nutrition_info');
             if ($raw !== '') {
                 $decoded = \is_array($raw) ? $raw : json_decode($raw, true);
-                if (\is_array($decoded)) {
-                    $schema['nutritionInformation'] = array_merge(['@type' => 'NutritionInformation'], $decoded);
-                }
+                $schema  = $this->addAdditionalProperty(
+                    $schema,
+                    'nutritionInformation',
+                    \is_array($decoded) ? json_encode($decoded) : $raw
+                );
             }
         }
 
@@ -85,7 +90,6 @@ class PetBuilder extends AbstractBuilder
             'material' => ['ingredients', 'material'],
             'weight'   => ['weight'],
             'color'    => ['color'],
-            'warning'  => ['safety_warning'],
         ];
 
         foreach ($simpleFields as $field => $attrCodes) {
@@ -103,6 +107,14 @@ class PetBuilder extends AbstractBuilder
             }
             if ($value !== '') {
                 $schema[$field] = $value;
+            }
+        }
+
+        // "warning" is not a Product property either.
+        if (\in_array('warning', $enabledFields, true)) {
+            $warning = $overrides['warning'] ?? $this->attr($product, 'safety_warning');
+            if ($warning !== '') {
+                $schema = $this->addAdditionalProperty($schema, 'safetyWarning', $warning);
             }
         }
 

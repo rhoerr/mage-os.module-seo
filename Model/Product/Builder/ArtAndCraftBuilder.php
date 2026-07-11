@@ -89,7 +89,7 @@ class ArtAndCraftBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
@@ -104,9 +104,12 @@ class ArtAndCraftBuilder extends AbstractBuilder
 
     /**
      * @inheritdoc
+     *
+     * Multi-type: VisualArtwork alone is a CreativeWork subtype, which forfeits
+     * Product rich-result eligibility; Product must accompany it.
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
-        return 'VisualArtwork';
+        return ['Product', 'VisualArtwork'];
     }
 }

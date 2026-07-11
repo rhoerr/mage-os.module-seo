@@ -57,13 +57,14 @@ class BookBuilder extends AbstractBuilder
             $isbn = $overrides['isbn'] ?? $this->attr($product, 'isbn') ?: $this->attr($product, 'barcode');
             if ($isbn !== '') {
                 $schema['isbn'] = $isbn;
-                // ISBN is also the GTIN for books
-                $schema['gtin13'] = $isbn;
+                // An ISBN-13 is also the book's GTIN — but only when it validates as one
+                // (ISBN-10 values or formatted strings must not be emitted as gtin13).
+                $schema = $this->applyGtin($schema, (string) $isbn);
             }
         } elseif (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
@@ -118,9 +119,12 @@ class BookBuilder extends AbstractBuilder
 
     /**
      * @inheritdoc
+     *
+     * Multi-type: Book alone is a CreativeWork subtype, which forfeits Product
+     * rich-result eligibility; Product must accompany it.
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
-        return 'Book';
+        return ['Product', 'Book'];
     }
 }

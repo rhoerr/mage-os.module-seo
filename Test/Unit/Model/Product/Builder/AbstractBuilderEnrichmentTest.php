@@ -17,6 +17,7 @@ use MageOS\Seo\Api\AggregateRatingProviderInterface;
 use MageOS\Seo\Api\OfferEnricherInterface;
 use MageOS\Seo\Model\Config;
 use MageOS\Seo\Model\Product\Builder\GenericProductBuilder;
+use MageOS\Seo\Model\Product\GtinValidator;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
@@ -130,6 +131,7 @@ class AbstractBuilderEnrichmentTest extends TestCase
 
         $currencyService = $this->createMock(CurrencyService::class);
         $currencyService->method('getCurrentCurrencyCode')->willReturn('GBP');
+        $currencyService->method('convertFromBase')->willReturnArgument(0);
 
         $imageHelper = $this->createMock(ImageHelper::class);
         $imageHelper->method('init')->willReturnSelf();
@@ -142,7 +144,8 @@ class AbstractBuilderEnrichmentTest extends TestCase
             $this->seoConfig,
             $this->createMock(DateTime::class),
             new OfferEnricherPool([$enricher]),
-            new AggregateRatingResolver([$ratingProvider])
+            new AggregateRatingResolver([$ratingProvider]),
+            new GtinValidator()
         );
     }
 

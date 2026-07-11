@@ -59,7 +59,7 @@ class ToyBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
@@ -78,7 +78,7 @@ class ToyBuilder extends AbstractBuilder
             $schema['audience'] = $audience;
         }
 
-        foreach (['material' => 'material', 'color' => 'color', 'warning' => 'safety_warning'] as $field => $attrCode) {
+        foreach (['material' => 'material', 'color' => 'color'] as $field => $attrCode) {
             if (!\in_array($field, $enabledFields, true)) {
                 continue;
             }
@@ -88,10 +88,23 @@ class ToyBuilder extends AbstractBuilder
             }
         }
 
+        // Neither "warning" nor "batteriesRequired" is a schema.org Product property;
+        // both are expressed as additionalProperty entries.
+        if (\in_array('warning', $enabledFields, true)) {
+            $warning = $overrides['warning'] ?? $this->attr($product, 'safety_warning');
+            if ($warning !== '') {
+                $schema = $this->addAdditionalProperty($schema, 'safetyWarning', $warning);
+            }
+        }
+
         if (\in_array('batteriesRequired', $enabledFields, true)) {
             $batteries = $overrides['batteriesRequired'] ?? $this->attr($product, 'batteries_required');
             if ($batteries !== '') {
-                $schema['batteriesRequired'] = filter_var($batteries, FILTER_VALIDATE_BOOLEAN);
+                $schema = $this->addAdditionalProperty(
+                    $schema,
+                    'batteriesRequired',
+                    filter_var($batteries, FILTER_VALIDATE_BOOLEAN) ? 'Yes' : 'No'
+                );
             }
         }
 

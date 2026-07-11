@@ -15,6 +15,9 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Config;
 use MageOS\Seo\Model\Product\Builder\GenericProductBuilder;
+use MageOS\Seo\Model\Product\GtinValidator;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -93,6 +96,7 @@ class GenericProductBuilderTest extends TestCase
         $this->storeManager->method('getStore')->willReturn($this->store);
         $this->store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->currencyService->method('getCurrentCurrencyCode')->willReturn('GBP');
+        $this->currencyService->method('convertFromBase')->willReturnArgument(0);
         // Note: stockItem and getData/getAttributeText are NOT stubbed here — per-test
         // configuration avoids PHPUnit 10's first-match-wins stub ordering issue.
         $this->finalPrice->method('getValue')->willReturn(29.99);
@@ -114,7 +118,10 @@ class GenericProductBuilderTest extends TestCase
             $this->stockRegistry,
             $this->imageHelper,
             $this->seoConfig,
-            $this->dateTime
+            $this->dateTime,
+            new OfferEnricherPool(),
+            new AggregateRatingResolver(),
+            new GtinValidator()
         );
     }
 
@@ -378,15 +385,28 @@ class GenericProductBuilderTest extends TestCase
         $this->assertSame('Override Brand', $schema['brand']);
     }
 
-    public function testBuildGtin13IncludedWhenFieldEnabled(): void
+    public function testBuildGtin13IncludedWhenFieldEnabledAndValueValid(): void
     {
+        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->product->method('getData')->willReturnCallback(
+            fn (string $key) => $key === 'gtin13' ? '4006381333931' : null
+        );
+        $this->product->method('getAttributeText')->willReturn(false);
+        $schema = $this->builder->build($this->product, ['gtin13'], [], []);
+        $this->assertSame('4006381333931', $schema['gtin13']);
+    }
+
+    public function testBuildGtin13OmittedWhenValueFailsGs1Validation(): void
+    {
+        // Free-form barcode content (internal SKUs, wrong check digits) must be
+        // omitted rather than emitted as an invalid gtin13.
         $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
         $this->product->method('getData')->willReturnCallback(
             fn (string $key) => $key === 'gtin13' ? '1234567890123' : null
         );
         $this->product->method('getAttributeText')->willReturn(false);
         $schema = $this->builder->build($this->product, ['gtin13'], [], []);
-        $this->assertArrayHasKey('gtin13', $schema);
+        $this->assertArrayNotHasKey('gtin13', $schema);
     }
 
     public function testBuildColorFromVariantDataWhenEnabled(): void
@@ -422,17 +442,73 @@ class GenericProductBuilderTest extends TestCase
         $this->assertSame('Test Widget', $schema['name']);
     }
 
-    public function testBuildPriceValidUntilFormatIsDate(): void
+    public function testBuildPriceValidUntilUsesSyntheticWindowWhenNoSpecialPrice(): void
     {
         $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->dateTime->method('date')->willReturnCallback(
+            static fn (string $format, ?string $input = null): string => $input === null ? '2026-07-10' : '2026-10-10'
+        );
         $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $schema['offers']['priceValidUntil']);
+        $this->assertSame('2026-10-10', $schema['offers']['priceValidUntil']);
     }
 
-    public function testBuildItemConditionIsNewCondition(): void
+    public function testBuildPriceValidUntilPrefersActiveSpecialPriceEndDate(): void
     {
         $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->dateTime->method('date')->willReturn('2026-07-10');
+        $this->product->method('getData')->willReturnCallback(
+            static fn (string $key): ?string => $key === 'special_to_date' ? '2026-08-01 00:00:00' : null
+        );
         $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertSame('https://schema.org/NewCondition', $schema['offers']['itemCondition']);
+        $this->assertSame('2026-08-01', $schema['offers']['priceValidUntil']);
+    }
+
+    public function testBuildOmitsPriceValidUntilWhenMonthsConfiguredZero(): void
+    {
+        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->dateTime->method('date')->willReturn('2026-07-10');
+        $builder = new GenericProductBuilder(
+            $this->storeManager,
+            $this->currencyService,
+            $this->stockRegistry,
+            $this->imageHelper,
+            $this->makeConfigWithMonths(0),
+            $this->dateTime,
+            new OfferEnricherPool(),
+            new AggregateRatingResolver(),
+            new GtinValidator()
+        );
+        $schema = $builder->build($this->product, [], [], []);
+        $this->assertArrayNotHasKey('priceValidUntil', $schema['offers']);
+    }
+
+    public function testBuildDoesNotHardcodeItemCondition(): void
+    {
+        // itemCondition comes from the configurable ItemConditionEnricher; hardcoding
+        // NewCondition left used-goods stores no way to remove it.
+        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $schema = $this->builder->build($this->product, [], [], []);
+        $this->assertArrayNotHasKey('itemCondition', $schema['offers']);
+    }
+
+    public function testBuildAvailabilityBackOrderWhenOutOfStockButBackorderable(): void
+    {
+        $stockItem = $this->createMock(StockItemInterface::class);
+        $stockItem->method('getIsInStock')->willReturn(false);
+        $stockItem->method('getBackorders')->willReturn(1);
+        $this->stockRegistry->method('getStockItem')->willReturn($stockItem);
+
+        $schema = $this->builder->build($this->product, [], [], []);
+        $this->assertSame('https://schema.org/BackOrder', $schema['offers']['availability']);
+    }
+
+    /**
+     * Build a Config mock whose priceValidUntil window is the given number of months.
+     */
+    private function makeConfigWithMonths(int $months): Config&MockObject
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('getPriceValidUntilMonths')->willReturn($months);
+        return $config;
     }
 }

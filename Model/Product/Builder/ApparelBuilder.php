@@ -63,11 +63,12 @@ class ApparelBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode') ?: $this->attr($product, 'ean');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
-        // Color — prefer active variant, then attribute
+        // Color — prefer active variant, then attribute. Product-level only:
+        // schema.org defines color/size on Product, not on Offer.
         if (\in_array('color', $enabledFields, true)) {
             $color = $overrides['color']
                 ?? $variantData['color']
@@ -76,7 +77,6 @@ class ApparelBuilder extends AbstractBuilder
                 ?: $this->attr($product, 'colour');
             if ($color !== '') {
                 $schema['color'] = $color;
-                $schema['offers']['color'] = $color;
             }
         }
 
@@ -87,7 +87,6 @@ class ApparelBuilder extends AbstractBuilder
                 ?? $this->attr($product, 'size');
             if ($size !== '') {
                 $schema['size'] = $size;
-                $schema['offers']['size'] = $size;
             }
         }
 
@@ -127,9 +126,12 @@ class ApparelBuilder extends AbstractBuilder
 
     /**
      * @inheritdoc
+     *
+     * "Apparel" does not exist in the schema.org vocabulary; apparel items are
+     * plain Products with color/size/material/pattern properties.
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
-        return 'Apparel';
+        return 'Product';
     }
 }

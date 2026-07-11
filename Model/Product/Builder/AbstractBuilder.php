@@ -11,37 +11,34 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\ProductSchemaBuilderInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\GtinValidator;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
 
 abstract class AbstractBuilder implements ProductSchemaBuilderInterface
 {
-    // Standard availability URIs
-    protected const AVAILABILITY_IN_STOCK   = 'https://schema.org/InStock';
-    protected const AVAILABILITY_OUT        = 'https://schema.org/OutOfStock';
-    protected const AVAILABILITY_PREORDER   = 'https://schema.org/PreOrder';
-    protected const CONDITION_NEW           = 'https://schema.org/NewCondition';
+    // Standard availability URIs. Bridge modules can supply any schema.org
+    // availability URI (e.g. PreOrder) via $variantData['_availability'].
+    protected const AVAILABILITY_IN_STOCK  = 'https://schema.org/InStock';
+    protected const AVAILABILITY_OUT       = 'https://schema.org/OutOfStock';
+    protected const AVAILABILITY_BACKORDER = 'https://schema.org/BackOrder';
 
     /**
-     * @var OfferEnricherPool
-     */
-    protected readonly OfferEnricherPool $offerEnricherPool;
-
-    /**
-     * @var AggregateRatingResolver
-     */
-    protected readonly AggregateRatingResolver $aggregateRatingResolver;
-
-    /**
+     * All collaborators are required: Magento's ObjectManager passes the default value
+     * for optional constructor parameters unless di.xml configures them per consumer,
+     * so an optional pool with a "?? new Pool()" fallback silently loses every enricher
+     * and provider registered in di.xml.
+     *
      * @param StoreManagerInterface $storeManager
      * @param CurrencyService $currencyService
      * @param StockRegistryInterface $stockRegistry
      * @param ImageHelper $imageHelper
      * @param Config $seoConfig
      * @param DateTime $dateTime
-     * @param OfferEnricherPool|null $offerEnricherPool
-     * @param AggregateRatingResolver|null $aggregateRatingResolver
+     * @param OfferEnricherPool $offerEnricherPool
+     * @param AggregateRatingResolver $aggregateRatingResolver
+     * @param GtinValidator $gtinValidator
      */
     public function __construct(
         protected readonly StoreManagerInterface  $storeManager,
@@ -50,11 +47,31 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
         protected readonly ImageHelper            $imageHelper,
         protected readonly Config                 $seoConfig,
         protected readonly DateTime               $dateTime,
-        ?OfferEnricherPool $offerEnricherPool = null,
-        ?AggregateRatingResolver $aggregateRatingResolver = null
+        protected readonly OfferEnricherPool      $offerEnricherPool,
+        protected readonly AggregateRatingResolver $aggregateRatingResolver,
+        protected readonly GtinValidator          $gtinValidator
     ) {
-        $this->offerEnricherPool       = $offerEnricherPool ?? new OfferEnricherPool();
-        $this->aggregateRatingResolver = $aggregateRatingResolver ?? new AggregateRatingResolver();
+    }
+
+    /**
+     * Add a validated GTIN to the schema, or nothing when the value doesn't validate.
+     *
+     * Emits the property matching the value's real length (gtin8/gtin12/gtin13/gtin14)
+     * after a GS1 check-digit validation, so free-form barcode attribute content never
+     * produces "invalid gtin" errors in Search Console.
+     *
+     * @param mixed[] $schema
+     * @param string $value
+     * @return mixed[]
+     */
+    protected function applyGtin(array $schema, string $value): array
+    {
+        $property = $this->gtinValidator->resolveProperty($value);
+        if ($property !== null) {
+            $schema[$property] = (string) $this->gtinValidator->normalize($value);
+        }
+
+        return $schema;
     }
 
     /**
@@ -70,7 +87,6 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     {
         /** @var \Magento\Catalog\Model\Product $product */
         $store      = $this->storeManager->getStore();
-        $baseUrl    = rtrim((string) $store->getBaseUrl(), '/');
         $productUrl = $product->getProductUrl();
 
         // Offers: use variant URL if a variant is active
@@ -94,10 +110,15 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
                 'price'            => $price,
                 'priceCurrency'    => $currency,
                 'availability'     => $this->resolveAvailability($product, $variantData),
-                'itemCondition'    => self::CONDITION_NEW,
-                'priceValidUntil'  => $this->getPriceValidUntil(),
             ],
         ];
+
+        // itemCondition is deliberately NOT hardcoded here: ItemConditionEnricher adds
+        // it from configuration, so used-goods stores can change or clear it.
+        $priceValidUntil = $this->getPriceValidUntil($product);
+        if ($priceValidUntil !== null && $priceValidUntil !== '') {
+            $schema['offers']['priceValidUntil'] = $priceValidUntil;
+        }
 
         // Description
         $rawDesc = (string) $product->getShortDescription() ?: (string) $product->getDescription();
@@ -172,7 +193,12 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
             return null;
         }
 
-        return ['low' => $min, 'high' => $max];
+        // PriceInfo amounts are base currency; convert so lowPrice/highPrice match
+        // the display currency code emitted alongside them.
+        return [
+            'low'  => $this->currencyService->convertFromBase($min),
+            'high' => $this->currencyService->convertFromBase($max),
+        ];
     }
 
     /**
@@ -198,11 +224,13 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     /**
      * Return the schema.org @type for this builder.
      *
-     * Subclasses override for specialised types (FoodProduct, Apparel, etc.).
+     * Subclasses may return a multi-type array like ["Product", "Book"]: Google's
+     * Product rich results and merchant listings require the Product type, so a
+     * category-specific type must accompany Product, never replace it.
      *
-     * @return string
+     * @return string|string[]
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
         return 'Product';
     }
@@ -217,11 +245,13 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     protected function resolvePrice(ProductInterface $product, array $variantData): string
     {
         /** @var \Magento\Catalog\Model\Product $product */
-        if (!empty($variantData['_price'])) {
-            return number_format((float) $variantData['_price'], 2, '.', '');
-        }
-        $finalPrice = $product->getPriceInfo()->getPrice('final_price')->getValue();
-        return number_format((float) $finalPrice, 2, '.', '');
+        $baseAmount = !empty($variantData['_price'])
+            ? (float) $variantData['_price']
+            : (float) $product->getPriceInfo()->getPrice('final_price')->getValue();
+
+        // PriceInfo amounts (and bridge-supplied _price values) are base currency;
+        // convert so the amount matches the display currency code emitted with it.
+        return number_format($this->currencyService->convertFromBase($baseAmount), 2, '.', '');
     }
 
     /**
@@ -240,6 +270,10 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
             $stock = $this->stockRegistry->getStockItem((int) $product->getId());
             if ($stock->getIsInStock()) {
                 return self::AVAILABILITY_IN_STOCK;
+            }
+            // Out of stock but backorderable: customers can still order.
+            if ((int) $stock->getBackorders() > 0) {
+                return self::AVAILABILITY_BACKORDER;
             }
         } catch (\Exception) { // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch -- fall through to default
         }
@@ -283,23 +317,72 @@ abstract class AbstractBuilder implements ProductSchemaBuilderInterface
     protected function applyOverrides(array $schema, array $overrides): array
     {
         foreach ($overrides as $key => $value) {
-            if ($value !== null && $value !== '') {
-                $schema[$key] = $value;
+            if ($value === null || $value === '') {
+                continue;
             }
+            // GTIN overrides go through validation like attribute values, so a raw
+            // override can never emit an invalid gtin property.
+            if (\in_array($key, ['gtin', 'gtin8', 'gtin12', 'gtin13', 'gtin14'], true)) {
+                unset($schema[$key]);
+                $schema = $this->applyGtin($schema, (string) $value);
+                continue;
+            }
+            $schema[$key] = $value;
         }
         return $schema;
     }
 
     /**
-     * Compute priceValidUntil as end-of-day N months from today.
+     * Append a schema.org additionalProperty entry (PropertyValue).
      *
-     * @return string ISO 8601 date string (Y-m-d)
+     * The home for category-specific data that has no valid Product property —
+     * inventing properties (batteriesRequired) or borrowing them from other types
+     * (nutritionInformation, location) costs rich-result eligibility.
+     *
+     * @param mixed[] $schema
+     * @param string $name
+     * @param mixed $value
+     * @return mixed[]
      */
-    protected function getPriceValidUntil(): string
+    protected function addAdditionalProperty(array $schema, string $name, mixed $value): array
     {
+        $schema['additionalProperty'][] = [
+            '@type' => 'PropertyValue',
+            'name'  => $name,
+            'value' => $value,
+        ];
+
+        return $schema;
+    }
+
+    /**
+     * Resolve priceValidUntil
+     *
+     * Resolve priceValidUntil: the real special-price end date when one is active,
+     * otherwise a synthetic "today + N months" window (omitted when N is 0).
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @return string|null ISO 8601 date string (Y-m-d), or null to omit the property
+     */
+    protected function getPriceValidUntil(ProductInterface $product): ?string
+    {
+        /** @var \Magento\Catalog\Model\Product $product */
+        $specialTo = substr((string) $product->getData('special_to_date'), 0, 10);
+        $today     = $this->dateTime->date('Y-m-d');
+        if ($specialTo !== '' && $specialTo >= $today) {
+            return $specialTo;
+        }
+
         $storeId = (int) $this->storeManager->getStore()->getId();
         $months  = $this->seoConfig->getPriceValidUntilMonths($storeId);
-        return date('Y-m-d', (int) strtotime("+{$months} months"));
+        if ($months <= 0) {
+            // Merchants set 0 to omit the synthetic date rather than promise
+            // a price validity that has no basis in real pricing data.
+            return null;
+        }
+
+        // Store-timezone-aware (Stdlib DateTime::date applies the store offset).
+        return $this->dateTime->date('Y-m-d', "+{$months} months");
     }
 
     /**
