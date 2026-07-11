@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model;
 
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\Model\AbstractModel;
 use MageOS\Seo\Api\Data\FaqInterface;
 use MageOS\Seo\Model\ResourceModel\Faq as FaqResource;
 
-class Faq extends AbstractModel implements FaqInterface
+class Faq extends AbstractModel implements FaqInterface, IdentityInterface
 {
+    /**
+     * Cache tag prefix; FAQ-rendering blocks emit matching identities so FPC pages
+     * are purged automatically when a FAQ is saved or deleted (AbstractModel
+     * dispatches clean_cache_by_tags with this model's identities).
+     */
+    public const CACHE_TAG = 'mageos_seo_faq';
+
     /**
      * Initialize resource model.
      *
@@ -18,6 +26,24 @@ class Faq extends AbstractModel implements FaqInterface
     protected function _construct(): void
     {
         $this->_init(FaqResource::class);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getIdentities(): array
+    {
+        $identities = [self::CACHE_TAG];
+        if ($this->getIdentifier() !== '') {
+            $identities[] = self::CACHE_TAG . '_group_' . $this->getIdentifier();
+        }
+        // When the group identifier changes, pages caching the old group need purging too.
+        $origIdentifier = (string) $this->getOrigData(self::IDENTIFIER);
+        if ($origIdentifier !== '' && $origIdentifier !== $this->getIdentifier()) {
+            $identities[] = self::CACHE_TAG . '_group_' . $origIdentifier;
+        }
+
+        return $identities;
     }
 
     /**
