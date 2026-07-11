@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace MageOS\Seo\Model\Feed;
 
 use Magento\CacheInvalidate\Model\PurgeCache;
-use Magento\Framework\Cache\CacheConstants;
 use Magento\PageCache\Model\Cache\Type as FullPageCache;
 use Magento\PageCache\Model\Config as PageCacheConfig;
+use MageOS\Seo\Model\Cache\CleaningMode;
 
 /**
  * Invalidates a pre-generated feed everywhere it is cached: the var/ feed files,
@@ -29,13 +29,15 @@ class FeedInvalidator
      * @param FullPageCache $fullPageCache
      * @param PurgeCache $purgeCache
      * @param RegenerationRequester $regenerationRequester
+     * @param CleaningMode $cleaningMode
      */
     public function __construct(
         private readonly FeedStorage           $feedStorage,
         private readonly PageCacheConfig       $pageCacheConfig,
         private readonly FullPageCache         $fullPageCache,
         private readonly PurgeCache            $purgeCache,
-        private readonly RegenerationRequester $regenerationRequester
+        private readonly RegenerationRequester $regenerationRequester,
+        private readonly CleaningMode          $cleaningMode
     ) {
     }
 
@@ -99,6 +101,6 @@ class FeedInvalidator
         }
 
         // Built-in FPC: clean cached documents by tag (mirrors core FlushCacheByTags).
-        $this->fullPageCache->clean(CacheConstants::CLEANING_MODE_MATCHING_ANY_TAG, $tags);
+        $this->fullPageCache->clean($this->cleaningMode->matchingAnyTag(), $tags);
     }
 }

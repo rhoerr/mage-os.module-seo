@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\Feed;
 
 use Magento\CacheInvalidate\Model\PurgeCache;
-use Magento\Framework\Cache\CacheConstants;
 use Magento\PageCache\Model\Cache\Type as FullPageCache;
 use Magento\PageCache\Model\Config as PageCacheConfig;
+use MageOS\Seo\Model\Cache\CleaningMode;
 use MageOS\Seo\Model\Feed\FeedInvalidator;
 use MageOS\Seo\Model\Feed\FeedRegenerator;
 use MageOS\Seo\Model\Feed\FeedStorage;
@@ -57,7 +57,8 @@ class FeedInvalidatorTest extends TestCase
             $this->pageCacheConfig,
             $this->fullPageCache,
             $this->purgeCache,
-            $this->regenerationRequester
+            $this->regenerationRequester,
+            new CleaningMode()
         );
     }
 
@@ -85,11 +86,13 @@ class FeedInvalidatorTest extends TestCase
         $this->pageCacheConfig->method('getType')->willReturn((string) PageCacheConfig::BUILT_IN);
 
         $this->purgeCache->expects($this->never())->method('sendPurgeRequest');
+        // Literal on purpose: 'matchingAnyTag' is the cross-version contract the
+        // cache backend receives (CacheConstants on 2.4.9+, Zend_Cache before).
         $this->fullPageCache
             ->expects($this->once())
             ->method('clean')
             ->with(
-                CacheConstants::CLEANING_MODE_MATCHING_ANY_TAG,
+                'matchingAnyTag',
                 ['MAGEOS_SEO_LLMS', 'MAGEOS_SEO_LLMS_FULL']
             );
 
