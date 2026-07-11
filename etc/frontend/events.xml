@@ -7,7 +7,9 @@
         whose provider is registered in the MageOS\Seo\Model\RobotsMeta\Resolver pool.
     -->
     <event name="layout_generate_blocks_after">
-        <observer name="rs_seo_apply_robots_meta"
+        <observer name="mageos_seo_apply_robots_meta"
                   instance="MageOS\Seo\Observer\ApplyRobotsMeta"/>
+        <observer name="mageos_seo_apply_page_title"
+                  instance="MageOS\Seo\Observer\ApplyPageTitle"/>
     </event>
 </config>

@@ -35,12 +35,15 @@ class CategoryTitleProvider implements PageTitleProviderInterface
 
     /**
      * @inheritdoc
+     *
+     * Only speaks when the category has an explicit meta_title: returning the name
+     * would override the merchant's meta_title, which core already applies.
      */
     public function getTitle(): string
     {
         try {
             $category = $this->layerResolver->get()->getCurrentCategory();
-            return $category ? (string) $category->getName() : '';
+            return $category ? (string) $category->getData('meta_title') : '';
         } catch (\Exception) {
             return '';
         }
