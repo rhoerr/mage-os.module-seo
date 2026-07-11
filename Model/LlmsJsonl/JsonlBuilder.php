@@ -8,25 +8,33 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
+use Magento\CatalogInventory\Helper\Stock as StockHelper;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\JsonlLineProviderInterface;
 
 /**
  * Builds the /llms.jsonl document: one JSON-LD Product node per line for the store's catalog, plus
  * any lines contributed by bridge JsonlLineProviderInterface implementations.
+ *
+ * The catalog is processed in pages with URL rewrites and stock status loaded per page, so large
+ * catalogs neither exhaust memory nor trigger per-product lookup queries.
  */
 class JsonlBuilder
 {
+    private const PAGE_SIZE = 1000;
+
     /**
      * @param CollectionFactory $collectionFactory
      * @param ProductLineBuilder $productLineBuilder
      * @param StoreManagerInterface $storeManager
+     * @param StockHelper $stockHelper
      * @param array<mixed> $lineProviders
      */
     public function __construct(
         private readonly CollectionFactory      $collectionFactory,
         private readonly ProductLineBuilder     $productLineBuilder,
         private readonly StoreManagerInterface  $storeManager,
+        private readonly StockHelper            $stockHelper,
         private readonly array                  $lineProviders = []
     ) {
     }
@@ -49,15 +57,29 @@ class JsonlBuilder
             'in' => [Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_BOTH],
         ]);
         $collection->addFinalPrice();
+        // Loads request paths with the collection so getProductUrl() never falls back
+        // to a per-product url_rewrite lookup.
+        $collection->addUrlRewrite();
+        $collection->setPageSize(self::PAGE_SIZE);
 
-        $lines = [];
-        foreach ($collection->getItems() as $product) {
-            if (!$product instanceof ProductInterface) {
-                continue;
-            }
-            $line = $this->encode($this->productLineBuilder->build($product));
-            if ($line !== '') {
-                $lines[] = $line;
+        $output   = '';
+        $lastPage = $collection->getLastPageNumber();
+
+        for ($page = 1; $page <= $lastPage; $page++) {
+            $collection->setCurPage($page);
+            $collection->clear();
+            // Sets is_salable on every item in one pass instead of per-product
+            // salability resolution inside the line builder.
+            $this->stockHelper->addStockStatusToProducts($collection);
+
+            foreach ($collection as $product) {
+                if (!$product instanceof ProductInterface) {
+                    continue;
+                }
+                $line = $this->encode($this->productLineBuilder->build($product));
+                if ($line !== '') {
+                    $output .= $line . "\n";
+                }
             }
         }
 
@@ -68,12 +90,12 @@ class JsonlBuilder
             foreach ($provider->getAdditionalLines($storeId) as $node) {
                 $line = $this->encode($node);
                 if ($line !== '') {
-                    $lines[] = $line;
+                    $output .= $line . "\n";
                 }
             }
         }
 
-        return $lines === [] ? '' : implode("\n", $lines) . "\n";
+        return $output;
     }
 
     /**
