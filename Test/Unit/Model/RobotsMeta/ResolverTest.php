@@ -7,6 +7,7 @@ namespace MageOS\Seo\Test\Unit\Model\RobotsMeta;
 use Magento\Framework\View\Layout;
 use Magento\Framework\View\Layout\ProcessorInterface;
 use MageOS\Seo\Api\RobotsMetaProviderInterface;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use MageOS\Seo\Model\RobotsMeta\Resolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -48,7 +49,7 @@ class ResolverTest extends TestCase
     public function testReturnsNullWithNoProviders(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $resolver = new Resolver($this->layout, []);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), []);
         $this->assertNull($resolver->resolve(1));
     }
 
@@ -56,7 +57,7 @@ class ResolverTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['cms_page_view']);
         $provider = $this->makeProvider(['catalog_product_view'], 'INDEX,FOLLOW');
-        $resolver = new Resolver($this->layout, [$provider]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$provider]);
         $this->assertNull($resolver->resolve(1));
     }
 
@@ -64,7 +65,7 @@ class ResolverTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $provider = $this->makeProvider(['catalog_product_view'], 'NOINDEX,FOLLOW');
-        $resolver = new Resolver($this->layout, [$provider]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('NOINDEX,FOLLOW', $resolver->resolve(1));
     }
 
@@ -72,7 +73,7 @@ class ResolverTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['cms_page_view']);
         $provider = $this->makeProvider(['*'], 'INDEX,FOLLOW');
-        $resolver = new Resolver($this->layout, [$provider]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('INDEX,FOLLOW', $resolver->resolve(1));
     }
 
@@ -81,7 +82,7 @@ class ResolverTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $low  = $this->makeProvider(['*'], 'INDEX,FOLLOW', 100);
         $high = $this->makeProvider(['catalog_product_view'], 'NOINDEX,NOFOLLOW', 200);
-        $resolver = new Resolver($this->layout, [$low, $high]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$low, $high]);
         $this->assertSame('NOINDEX,NOFOLLOW', $resolver->resolve(1));
     }
 
@@ -90,7 +91,7 @@ class ResolverTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $null    = $this->makeProvider(['*'], null, 200);
         $nonNull = $this->makeProvider(['*'], 'INDEX,FOLLOW', 100);
-        $resolver = new Resolver($this->layout, [$null, $nonNull]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$null, $nonNull]);
         $this->assertSame('INDEX,FOLLOW', $resolver->resolve(1));
     }
 
@@ -99,7 +100,7 @@ class ResolverTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $empty   = $this->makeProvider(['*'], '', 200);
         $nonEmpty = $this->makeProvider(['*'], 'INDEX,FOLLOW', 100);
-        $resolver = new Resolver($this->layout, [$empty, $nonEmpty]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$empty, $nonEmpty]);
         $this->assertSame('INDEX,FOLLOW', $resolver->resolve(1));
     }
 
@@ -108,14 +109,14 @@ class ResolverTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $p1 = $this->makeProvider(['*'], null, 200);
         $p2 = $this->makeProvider(['*'], '', 100);
-        $resolver = new Resolver($this->layout, [$p1, $p2]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$p1, $p2]);
         $this->assertNull($resolver->resolve(1));
     }
 
     public function testNonProviderObjectsAreSkipped(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $resolver = new Resolver($this->layout, [new \stdClass(), 'not-a-provider']);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [new \stdClass(), 'not-a-provider']);
         $this->assertNull($resolver->resolve(1));
     }
 
@@ -129,7 +130,7 @@ class ResolverTest extends TestCase
             ->method('getRobots')
             ->with(7)
             ->willReturn('INDEX,FOLLOW');
-        $resolver = new Resolver($this->layout, [$provider]);
+        $resolver = new Resolver($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('INDEX,FOLLOW', $resolver->resolve(7));
     }
 }

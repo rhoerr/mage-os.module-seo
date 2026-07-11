@@ -9,6 +9,7 @@ use Magento\Framework\View\Layout\ProcessorInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\ArticleDataProviderInterface;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use MageOS\Seo\Model\StructuredData\OrganisationId;
 use MageOS\Seo\Model\StructuredData\Provider\ArticleSchemaProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -65,7 +66,13 @@ class ArticleSchemaProviderTest extends TestCase
         $store->method('getId')->willReturn(1);
         $storeManager->method('getStore')->willReturn($store);
 
-        return new ArticleSchemaProvider($this->layout, $storeManager, $this->organisationId, $providers);
+        return new ArticleSchemaProvider(
+            $this->layout,
+            $storeManager,
+            $this->organisationId,
+            new HandleMatcher(),
+            $providers
+        );
     }
 
     public function testHandlesEveryPage(): void

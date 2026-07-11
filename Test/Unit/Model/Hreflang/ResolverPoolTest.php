@@ -8,7 +8,9 @@ use Magento\Framework\View\Layout;
 use Magento\Framework\View\Layout\ProcessorInterface;
 use MageOS\Seo\Api\HreflangResolverInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Hreflang\AlternateBuilder;
 use MageOS\Seo\Model\Hreflang\ResolverPool;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -63,9 +65,15 @@ class ResolverPoolTest extends TestCase
      */
     private function pool(array $links): ResolverPool
     {
-        return new ResolverPool($this->layout, $this->config, [
-            $this->makeResolver(['catalog_product_view'], $links),
-        ]);
+        return new ResolverPool(
+            $this->layout,
+            $this->config,
+            new HandleMatcher(),
+            new AlternateBuilder($this->config),
+            [
+                $this->makeResolver(['catalog_product_view'], $links),
+            ]
+        );
     }
 
     public function testSingleStoreReturnsEmpty(): void
@@ -76,6 +84,7 @@ class ResolverPoolTest extends TestCase
 
     public function testTwoStoresOutputBothRegionLinks(): void
     {
+        $this->config->method('isHreflangEnabled')->willReturn(true);
         $pool   = $this->pool([
             $this->link('en-GB', 'https://uk/p', 1),
             $this->link('en-US', 'https://us/p', 2),
@@ -88,6 +97,7 @@ class ResolverPoolTest extends TestCase
 
     public function testLanguageOnlyTagsAddedForUniqueBaseLanguages(): void
     {
+        $this->config->method('isHreflangEnabled')->willReturn(true);
         $this->config->method('isHreflangLanguageOnlyEnabled')->willReturn(true);
         $pool   = $this->pool([
             $this->link('en-GB', 'https://uk/p', 1),
@@ -120,6 +130,7 @@ class ResolverPoolTest extends TestCase
 
     public function testXDefaultAddedForConfiguredStore(): void
     {
+        $this->config->method('isHreflangEnabled')->willReturn(true);
         $this->config->method('getHreflangXDefaultStoreId')->willReturn(2);
         $pool   = $this->pool([
             $this->link('en-GB', 'https://uk/p', 1),
@@ -152,6 +163,7 @@ class ResolverPoolTest extends TestCase
 
     public function testFirstMatchingResolverWithLinksWins(): void
     {
+        $this->config->method('isHreflangEnabled')->willReturn(true);
         $first  = $this->makeResolver(['catalog_product_view'], [
             $this->link('en-GB', 'https://uk/first', 1),
             $this->link('de-DE', 'https://de/first', 2),
@@ -160,24 +172,42 @@ class ResolverPoolTest extends TestCase
             $this->link('en-GB', 'https://uk/second', 1),
             $this->link('de-DE', 'https://de/second', 2),
         ]);
-        $pool = new ResolverPool($this->layout, $this->config, [$first, $second]);
+        $pool = new ResolverPool(
+            $this->layout,
+            $this->config,
+            new HandleMatcher(),
+            new AlternateBuilder($this->config),
+            [$first, $second]
+        );
         $this->assertSame('https://uk/first', $pool->getLinks()[0]['url']);
     }
 
     public function testNonMatchingResolverIsSkipped(): void
     {
-        $pool = new ResolverPool($this->layout, $this->config, [
-            $this->makeResolver(['cms_page_view'], [
-                $this->link('en-GB', 'https://uk/p', 1),
-                $this->link('de-DE', 'https://de/p', 2),
-            ]),
-        ]);
+        $pool = new ResolverPool(
+            $this->layout,
+            $this->config,
+            new HandleMatcher(),
+            new AlternateBuilder($this->config),
+            [
+                $this->makeResolver(['cms_page_view'], [
+                    $this->link('en-GB', 'https://uk/p', 1),
+                    $this->link('de-DE', 'https://de/p', 2),
+                ]),
+            ]
+        );
         $this->assertSame([], $pool->getLinks());
     }
 
     public function testNonResolverObjectsAreSkipped(): void
     {
-        $pool = new ResolverPool($this->layout, $this->config, [new \stdClass()]);
+        $pool = new ResolverPool(
+            $this->layout,
+            $this->config,
+            new HandleMatcher(),
+            new AlternateBuilder($this->config),
+            [new \stdClass()]
+        );
         $this->assertSame([], $pool->getLinks());
     }
 }

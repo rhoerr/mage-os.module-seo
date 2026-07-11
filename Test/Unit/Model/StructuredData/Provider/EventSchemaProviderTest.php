@@ -9,6 +9,7 @@ use Magento\Framework\View\Layout\ProcessorInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\EventDataProviderInterface;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use MageOS\Seo\Model\StructuredData\OrganisationId;
 use MageOS\Seo\Model\StructuredData\Provider\EventSchemaProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -65,7 +66,13 @@ class EventSchemaProviderTest extends TestCase
         $store->method('getId')->willReturn(1);
         $storeManager->method('getStore')->willReturn($store);
 
-        return new EventSchemaProvider($this->layout, $storeManager, $this->organisationId, $providers);
+        return new EventSchemaProvider(
+            $this->layout,
+            $storeManager,
+            $this->organisationId,
+            new HandleMatcher(),
+            $providers
+        );
     }
 
     public function testEmptyPoolReturnsNoSchemas(): void

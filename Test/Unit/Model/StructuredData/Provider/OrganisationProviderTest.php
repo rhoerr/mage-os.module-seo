@@ -9,11 +9,12 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\Data\OrganisationInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
-use MageOS\Seo\Model\StructuredData\Provider\OrganizationProvider;
+use MageOS\Seo\Model\StructuredData\OrganisationId;
+use MageOS\Seo\Model\StructuredData\Provider\OrganisationProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class OrganizationProviderTest extends TestCase
+class OrganisationProviderTest extends TestCase
 {
     /**
      * @var OrganisationRepositoryInterface&MockObject
@@ -26,9 +27,9 @@ class OrganizationProviderTest extends TestCase
     private StoreManagerInterface&MockObject $storeManager;
 
     /**
-     * @var OrganizationProvider
+     * @var OrganisationProvider
      */
-    private OrganizationProvider $provider;
+    private OrganisationProvider $provider;
 
     protected function setUp(): void
     {
@@ -42,7 +43,11 @@ class OrganizationProviderTest extends TestCase
         $this->storeManager->method('getStore')->willReturn($store);
         $this->storeManager->method('getWebsite')->willReturn($website);
 
-        $this->provider = new OrganizationProvider($this->repository, $this->storeManager);
+        $this->provider = new OrganisationProvider(
+            $this->repository,
+            $this->storeManager,
+            new OrganisationId($this->repository, $this->storeManager)
+        );
     }
 
     /**

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\RobotsMeta;
 
-use Magento\Framework\View\Layout;
+use Magento\Framework\View\LayoutInterface;
 use MageOS\Seo\Api\RobotsMetaProviderInterface;
 use MageOS\Seo\Model\Pool\HandleMatcher;
 
 /**
- * First-wins resolver for the robots meta provider pool.
+ * Highest-sortOrder-wins resolver for the robots meta provider pool.
  *
  * Iterates every registered provider whose handles match the current page and returns the value
  * from the highest-sortOrder provider that yields a non-empty robots string. Returns null when no
@@ -18,21 +18,15 @@ use MageOS\Seo\Model\Pool\HandleMatcher;
 class Resolver
 {
     /**
-     * @var HandleMatcher
-     */
-    private readonly HandleMatcher $handleMatcher;
-
-    /**
-     * @param Layout $layout
+     * @param LayoutInterface $layout
+     * @param HandleMatcher $handleMatcher
      * @param array<mixed> $providers
-     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
-        private readonly Layout $layout,
-        private readonly array  $providers = [],
-        ?HandleMatcher $handleMatcher = null
+        private readonly LayoutInterface        $layout,
+        private readonly HandleMatcher $handleMatcher,
+        private readonly array         $providers = []
     ) {
-        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**

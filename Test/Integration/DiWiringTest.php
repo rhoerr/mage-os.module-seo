@@ -14,6 +14,8 @@ use MageOS\Seo\Model\LlmsJsonl\JsonlBuilder;
 use MageOS\Seo\Model\LlmsTxt\LlmsTxtBuilder;
 use MageOS\Seo\Model\MetaTag\Compositor as MetaTagCompositor;
 use MageOS\Seo\Model\PageTitle\Compositor as PageTitleCompositor;
+use MageOS\Seo\Model\Product\Builder\AbstractBuilder;
+use MageOS\Seo\Model\Product\Builder\GenericProductBuilder;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Product\SchemaBuilderPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
@@ -122,5 +124,30 @@ class DiWiringTest extends TestCase
         $this->assertTrue($pool->has('ucp'));
         $this->assertTrue($pool->has('ai-plugin.json'));
         $this->assertTrue($pool->has('security.txt'));
+    }
+
+    /**
+     * Guards against optional-constructor-argument regressions: the ObjectManager passes
+     * the default for optional args unless di.xml configures them per consumer, so a
+     * builder whose pool argument is optional silently loses every configured enricher.
+     * This asserts the DI-built builder actually holds the di.xml-configured pools.
+     */
+    public function testDiBuiltProductBuilderReceivesConfiguredEnrichersAndRatingProviders(): void
+    {
+        $builder = Bootstrap::getObjectManager()->get(GenericProductBuilder::class);
+
+        $pool = (new \ReflectionProperty(AbstractBuilder::class, 'offerEnricherPool'))->getValue($builder);
+        $this->assertInstanceOf(OfferEnricherPool::class, $pool);
+        $enrichers = (new \ReflectionProperty(OfferEnricherPool::class, 'enrichers'))->getValue($pool);
+        $this->assertArrayHasKey('itemCondition', $enrichers);
+        $this->assertArrayHasKey('returnPolicy', $enrichers);
+        $this->assertArrayHasKey('shippingDetails', $enrichers);
+
+        $resolver = (new \ReflectionProperty(AbstractBuilder::class, 'aggregateRatingResolver'))
+            ->getValue($builder);
+        $this->assertInstanceOf(AggregateRatingResolver::class, $resolver);
+        $providers = (new \ReflectionProperty(AggregateRatingResolver::class, 'providers'))
+            ->getValue($resolver);
+        $this->assertArrayHasKey('native', $providers);
     }
 }

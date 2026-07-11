@@ -4,28 +4,22 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\MetaTag;
 
-use Magento\Framework\View\Layout;
+use Magento\Framework\View\LayoutInterface;
 use MageOS\Seo\Api\MetaTagProviderInterface;
 use MageOS\Seo\Model\Pool\HandleMatcher;
 
 class Compositor
 {
     /**
-     * @var HandleMatcher
-     */
-    private readonly HandleMatcher $handleMatcher;
-
-    /**
-     * @param Layout $layout
+     * @param LayoutInterface $layout
+     * @param HandleMatcher $handleMatcher
      * @param array<mixed> $providers
-     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
-        private readonly Layout $layout,
-        private readonly array  $providers = [],
-        ?HandleMatcher $handleMatcher = null
+        private readonly LayoutInterface        $layout,
+        private readonly HandleMatcher $handleMatcher,
+        private readonly array         $providers = []
     ) {
-        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**

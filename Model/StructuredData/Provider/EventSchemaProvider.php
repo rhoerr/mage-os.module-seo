@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\StructuredData\Provider;
 
-use Magento\Framework\View\Layout;
+use Magento\Framework\View\LayoutInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\EventDataProviderInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
@@ -20,25 +20,19 @@ use MageOS\Seo\Model\StructuredData\OrganisationId;
 class EventSchemaProvider implements StructuredDataProviderInterface
 {
     /**
-     * @var HandleMatcher
-     */
-    private readonly HandleMatcher $handleMatcher;
-
-    /**
-     * @param Layout $layout
+     * @param LayoutInterface $layout
      * @param StoreManagerInterface $storeManager
      * @param OrganisationId $organisationId
+     * @param HandleMatcher $handleMatcher
      * @param array<mixed> $dataProviders
-     * @param HandleMatcher|null $handleMatcher
      */
     public function __construct(
-        private readonly Layout                $layout,
+        private readonly LayoutInterface                $layout,
         private readonly StoreManagerInterface $storeManager,
         private readonly OrganisationId        $organisationId,
-        private readonly array                 $dataProviders = [],
-        ?HandleMatcher $handleMatcher = null
+        private readonly HandleMatcher         $handleMatcher,
+        private readonly array                 $dataProviders = []
     ) {
-        $this->handleMatcher = $handleMatcher ?? new HandleMatcher();
     }
 
     /**

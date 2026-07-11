@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\Hreflang;
 
-use Magento\Framework\View\Layout;
+use Magento\Framework\View\LayoutInterface;
 use MageOS\Seo\Api\HreflangResolverInterface;
 use MageOS\Seo\Model\Config;
 use MageOS\Seo\Model\Pool\HandleMatcher;
@@ -19,31 +19,23 @@ use MageOS\Seo\Model\Pool\HandleMatcher;
 class ResolverPool
 {
     /**
-     * @var HandleMatcher
-     */
-    private readonly HandleMatcher $handleMatcher;
-
-    /**
-     * @var AlternateBuilder
-     */
-    private readonly AlternateBuilder $alternateBuilder;
-
-    /**
-     * @param Layout $layout
+     * Collaborators are required: the ObjectManager passes the default for optional
+     * constructor parameters unless di.xml configures them per consumer, so optional
+     * collaborators with "?? new X()" fallbacks silently bypass DI configuration.
+     *
+     * @param LayoutInterface $layout
      * @param Config $seoConfig
+     * @param HandleMatcher $handleMatcher
+     * @param AlternateBuilder $alternateBuilder
      * @param array<mixed> $resolvers
-     * @param HandleMatcher|null $handleMatcher
-     * @param AlternateBuilder|null $alternateBuilder
      */
     public function __construct(
-        private readonly Layout $layout,
-        private readonly Config $seoConfig,
-        private readonly array  $resolvers = [],
-        ?HandleMatcher $handleMatcher = null,
-        ?AlternateBuilder $alternateBuilder = null
+        private readonly LayoutInterface  $layout,
+        private readonly Config           $seoConfig,
+        private readonly HandleMatcher    $handleMatcher,
+        private readonly AlternateBuilder $alternateBuilder,
+        private readonly array            $resolvers = []
     ) {
-        $this->handleMatcher    = $handleMatcher ?? new HandleMatcher();
-        $this->alternateBuilder = $alternateBuilder ?? new AlternateBuilder($seoConfig);
     }
 
     /**
@@ -53,6 +45,10 @@ class ResolverPool
      */
     public function getLinks(): array
     {
+        if (!$this->seoConfig->isHreflangEnabled()) {
+            return [];
+        }
+
         return $this->alternateBuilder->build($this->resolveRegionLinks());
     }
 

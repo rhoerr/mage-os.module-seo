@@ -8,6 +8,7 @@ use Magento\Framework\View\Layout;
 use Magento\Framework\View\Layout\ProcessorInterface;
 use MageOS\Seo\Api\PageTitleProviderInterface;
 use MageOS\Seo\Model\PageTitle\Compositor;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -48,7 +49,7 @@ class CompositorTest extends TestCase
     public function testReturnsEmptyStringWithNoProviders(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $compositor = new Compositor($this->layout, []);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), []);
         $this->assertSame('', $compositor->getTitle());
     }
 
@@ -56,7 +57,7 @@ class CompositorTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['cms_page_view']);
         $provider = $this->makeProvider(['catalog_product_view'], 'Product Title', 10);
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('', $compositor->getTitle());
     }
 
@@ -64,7 +65,7 @@ class CompositorTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $provider = $this->makeProvider(['catalog_product_view'], 'My Product', 10);
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('My Product', $compositor->getTitle());
     }
 
@@ -72,7 +73,7 @@ class CompositorTest extends TestCase
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['cms_page_view']);
         $provider = $this->makeProvider(['*'], 'CMS Title', 5);
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame('CMS Title', $compositor->getTitle());
     }
 
@@ -81,7 +82,7 @@ class CompositorTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $low  = $this->makeProvider(['*'], 'Low Priority', 10);
         $high = $this->makeProvider(['catalog_product_view'], 'High Priority', 50);
-        $compositor = new Compositor($this->layout, [$low, $high]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$low, $high]);
         $this->assertSame('High Priority', $compositor->getTitle());
     }
 
@@ -91,7 +92,7 @@ class CompositorTest extends TestCase
         $p1 = $this->makeProvider(['*'], 'Sort 100', 100);
         $p2 = $this->makeProvider(['*'], 'Sort 200', 200);
         $p3 = $this->makeProvider(['*'], 'Sort 50', 50);
-        $compositor = new Compositor($this->layout, [$p3, $p1, $p2]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$p3, $p1, $p2]);
         $this->assertSame('Sort 200', $compositor->getTitle());
     }
 
@@ -100,7 +101,7 @@ class CompositorTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $empty   = $this->makeProvider(['*'], '', 100);
         $nonEmpty = $this->makeProvider(['*'], 'Actual Title', 50);
-        $compositor = new Compositor($this->layout, [$empty, $nonEmpty]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$empty, $nonEmpty]);
         $this->assertSame('Actual Title', $compositor->getTitle());
     }
 
@@ -109,14 +110,14 @@ class CompositorTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $p1 = $this->makeProvider(['*'], '', 100);
         $p2 = $this->makeProvider(['*'], '', 50);
-        $compositor = new Compositor($this->layout, [$p1, $p2]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$p1, $p2]);
         $this->assertSame('', $compositor->getTitle());
     }
 
     public function testNonProviderObjectsAreSkipped(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $compositor = new Compositor($this->layout, [new \stdClass()]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [new \stdClass()]);
         $this->assertSame('', $compositor->getTitle());
     }
 
@@ -125,7 +126,7 @@ class CompositorTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
         $p1 = $this->makeProvider(['*'], 'First', 10);
         $p2 = $this->makeProvider(['*'], 'Second', 10);
-        $compositor = new Compositor($this->layout, [$p1, $p2]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$p1, $p2]);
         // Both have sort order 10 — result is deterministic (stable sort not guaranteed, but one wins)
         $title = $compositor->getTitle();
         $this->assertContains($title, ['First', 'Second']);
@@ -136,7 +137,7 @@ class CompositorTest extends TestCase
         $this->layoutUpdate->method('getHandles')->willReturn(['default', 'cms_index_index']);
         $matched  = $this->makeProvider(['cms_index_index'], 'Home', 10);
         $unmatched = $this->makeProvider(['catalog_product_view'], 'Product', 10);
-        $compositor = new Compositor($this->layout, [$matched, $unmatched]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$matched, $unmatched]);
         $this->assertSame('Home', $compositor->getTitle());
     }
 }

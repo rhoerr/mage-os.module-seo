@@ -9,24 +9,18 @@ use MageOS\Seo\Api\OrganisationRepositoryInterface;
 use MageOS\Seo\Api\StructuredDataProviderInterface;
 use MageOS\Seo\Model\StructuredData\OrganisationId;
 
-class OrganizationProvider implements StructuredDataProviderInterface
+class OrganisationProvider implements StructuredDataProviderInterface
 {
-    /**
-     * @var OrganisationId
-     */
-    private readonly OrganisationId $organisationId;
-
     /**
      * @param OrganisationRepositoryInterface $organisationRepository
      * @param StoreManagerInterface $storeManager
-     * @param OrganisationId|null $organisationId
+     * @param OrganisationId $organisationId
      */
     public function __construct(
         private readonly OrganisationRepositoryInterface $organisationRepository,
         private readonly StoreManagerInterface           $storeManager,
-        ?OrganisationId $organisationId = null
+        private readonly OrganisationId                  $organisationId
     ) {
-        $this->organisationId = $organisationId ?? new OrganisationId($organisationRepository, $storeManager);
     }
 
     /**
