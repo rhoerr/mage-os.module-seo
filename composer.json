@@ -38,7 +38,8 @@
         ],
         "psr-4": {
             "MageOS\\Seo\\": ""
-        }
+        },
+        "exclude-from-classmap": ["Compat/"]
     },
     "config": {
         "sort-packages": true,
