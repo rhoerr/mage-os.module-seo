@@ -5,7 +5,7 @@
     <body>
         <referenceContainer name="page.main.actions">
             <block class="Magento\Backend\Block\Store\Switcher"
-                   name="rs_seo_organisation_store_switcher"
+                   name="mageos_seo_organisation_store_switcher"
                    template="Magento_Backend::store/switcher.phtml">
                 <arguments>
                     <argument name="switch_websites" xsi:type="string">1</argument>
@@ -16,7 +16,7 @@
             </block>
         </referenceContainer>
         <referenceContainer name="content">
-            <uiComponent name="rs_seo_organisation_form"/>
+            <uiComponent name="mageos_seo_organisation_form"/>
         </referenceContainer>
     </body>
 </page>

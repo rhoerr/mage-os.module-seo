@@ -8,7 +8,7 @@ use MageOS\Seo\Api\FaqSourceProviderInterface;
 use MageOS\Seo\Model\Faq\Repository;
 
 /**
- * FAQ source backed by the module's own mage-os_seo_faq table.
+ * FAQ source backed by the module's own mageos_seo_faq table.
  */
 class TableFaqSource implements FaqSourceProviderInterface
 {

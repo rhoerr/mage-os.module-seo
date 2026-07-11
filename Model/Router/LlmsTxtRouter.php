@@ -18,9 +18,9 @@ use Magento\Framework\App\RouterInterface;
 class LlmsTxtRouter implements RouterInterface
 {
     private const ROUTES = [
-        'llms.txt'      => ['module' => 'rs-seo', 'controller' => 'llms',      'action' => 'index'],
-        'llms-full.txt' => ['module' => 'rs-seo', 'controller' => 'llmsfull',  'action' => 'index'],
-        'llms.jsonl'    => ['module' => 'rs-seo', 'controller' => 'llmsjsonl', 'action' => 'index'],
+        'llms.txt'      => ['module' => 'mageos-seo', 'controller' => 'llms',      'action' => 'index'],
+        'llms-full.txt' => ['module' => 'mageos-seo', 'controller' => 'llmsfull',  'action' => 'index'],
+        'llms.jsonl'    => ['module' => 'mageos-seo', 'controller' => 'llmsjsonl', 'action' => 'index'],
     ];
 
     /**
@@ -48,7 +48,7 @@ class LlmsTxtRouter implements RouterInterface
 
         // Prevent infinite loop — if the module has already been set to ours
         // by a previous iteration, this router has already matched and forwarded.
-        if ($request->getModuleName() === 'rs-seo') {
+        if ($request->getModuleName() === 'mageos-seo') {
             return null;
         }
 

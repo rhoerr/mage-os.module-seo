@@ -4,7 +4,7 @@
 
     <!-- Server-side render the FAQ Page Builder content type via the FaqList widget -->
     <type name="Magento\Framework\Filter\Template">
-        <plugin name="rs_seo_faq_pagebuilder_renderer"
+        <plugin name="mageos_seo_faq_pagebuilder_renderer"
                 type="MageOS\Seo\Plugin\PageBuilder\FaqRenderer"
                 sortOrder="25"/>
     </type>
@@ -13,17 +13,17 @@
     <type name="Magento\Framework\App\RouterList">
         <arguments>
             <argument name="routerList" xsi:type="array">
-                <item name="rs_seo_llms" xsi:type="array">
+                <item name="mageos_seo_llms" xsi:type="array">
                     <item name="class"     xsi:type="string">MageOS\Seo\Model\Router\LlmsTxtRouter</item>
                     <item name="disable"   xsi:type="boolean">false</item>
                     <item name="sortOrder" xsi:type="string">20</item>
                 </item>
-                <item name="rs_seo_hreflang_sitemap" xsi:type="array">
+                <item name="mageos_seo_hreflang_sitemap" xsi:type="array">
                     <item name="class"     xsi:type="string">MageOS\Seo\Model\Router\HreflangSitemapRouter</item>
                     <item name="disable"   xsi:type="boolean">false</item>
                     <item name="sortOrder" xsi:type="string">21</item>
                 </item>
-                <item name="rs_seo_wellknown" xsi:type="array">
+                <item name="mageos_seo_wellknown" xsi:type="array">
                     <item name="class"     xsi:type="string">MageOS\Seo\Model\Router\WellKnownRouter</item>
                     <item name="disable"   xsi:type="boolean">false</item>
                     <item name="sortOrder" xsi:type="string">19</item>

@@ -2,7 +2,7 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
     <router id="standard">
-        <route id="rs_seo" frontName="rs-seo">
+        <route id="mageos_seo" frontName="mageos-seo">
             <module name="MageOS_Seo"/>
         </route>
     </router>

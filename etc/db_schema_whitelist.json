@@ -1,4 +1,87 @@
 {
+    "mageos_seo_category_config": {
+        "column": {
+            "entity_id": true,
+            "category_id": true,
+            "store_id": true,
+            "schema_template": true,
+            "enabled_fields": true,
+            "override_fields": true,
+            "item_list_enabled": true,
+            "robots_meta": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MAGEOS_SEO_CATEGORY_CONFIG_CATEGORY_STORE": true
+        }
+    },
+    "mageos_seo_organisation": {
+        "column": {
+            "entity_id": true,
+            "scope": true,
+            "scope_id": true,
+            "name": true,
+            "url": true,
+            "logo_path": true,
+            "logo_width": true,
+            "logo_height": true,
+            "description": true,
+            "social_profiles": true,
+            "contact_point": true,
+            "org_type": true,
+            "street_address": true,
+            "address_locality": true,
+            "address_region": true,
+            "postal_code": true,
+            "address_country": true,
+            "telephone": true,
+            "email": true,
+            "latitude": true,
+            "longitude": true,
+            "price_range": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MAGEOS_SEO_ORG_SCOPE_SCOPE_ID": true
+        }
+    },
+    "mageos_seo_product_override": {
+        "column": {
+            "entity_id": true,
+            "product_id": true,
+            "store_id": true,
+            "override_fields": true,
+            "robots_meta": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MAGEOS_SEO_PRODUCT_OVERRIDE_PRODUCT_STORE": true
+        },
+        "index": {
+            "MAGEOS_SEO_PRODUCT_OVERRIDE_PRODUCT_ID_IDX": true
+        }
+    },
+    "mageos_seo_faq": {
+        "column": {
+            "entity_id": true,
+            "identifier": true,
+            "store_id": true,
+            "question": true,
+            "answer": true,
+            "sort_order": true,
+            "is_active": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        },
+        "index": {
+            "MAGEOS_SEO_FAQ_IDENTIFIER_STORE_IDX": true
+        }
+    },
     "mage-os_seo_category_config": {
         "column": {
             "entity_id": true,
