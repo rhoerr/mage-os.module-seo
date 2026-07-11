@@ -152,4 +152,24 @@ class SchemaRegistryTest extends TestCase
         $this->assertSame('W-001', $schema['sku']);
         $this->assertSame('Nice widget', $schema['description']);
     }
+
+    public function testResetStateDropsStoredSchema(): void
+    {
+        $this->registry->set(['@type' => 'Product', 'name' => 'Widget']);
+
+        $this->registry->_resetState();
+
+        $this->assertFalse($this->registry->has());
+        $this->assertNull($this->registry->get());
+    }
+
+    public function testMergeAfterResetStartsFromScratch(): void
+    {
+        $this->registry->set(['@type' => 'Product', 'name' => 'Widget']);
+        $this->registry->_resetState();
+
+        $this->registry->merge(['@type' => 'Product', 'name' => 'Other']);
+
+        $this->assertSame(['@type' => 'Product', 'name' => 'Other'], $this->registry->get());
+    }
 }

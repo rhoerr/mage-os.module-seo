@@ -10,9 +10,10 @@ use Magento\Cms\Model\PageFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
-class CmsPageResolver
+class CmsPageResolver implements ResetAfterRequestInterface
 {
     /** @var \Magento\Cms\Api\Data\PageInterface|null */
     private ?PageInterface $resolved = null;
@@ -63,6 +64,17 @@ class CmsPageResolver
         }
 
         return $this->resolved;
+    }
+
+    /**
+     * Drop the memoised page between worker-mode requests.
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->resolved  = null;
+        $this->attempted = false;
     }
 
     /**

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\Faq;
 
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 use MageOS\Seo\Api\FaqCollectorInterface;
 
 /**
  * Request-scoped FAQ identifier collector (one shared instance per request, like SchemaRegistry).
  */
-class Collector implements FaqCollectorInterface
+class Collector implements FaqCollectorInterface, ResetAfterRequestInterface
 {
     /**
      * @var array<string, true>
@@ -32,5 +33,15 @@ class Collector implements FaqCollectorInterface
     public function getIdentifiers(): array
     {
         return array_keys($this->identifiers);
+    }
+
+    /**
+     * Clear collected identifiers between worker-mode requests.
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->identifiers = [];
     }
 }

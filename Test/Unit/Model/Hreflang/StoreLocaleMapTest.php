@@ -126,6 +126,19 @@ class StoreLocaleMapTest extends TestCase
         $map->getMap();
     }
 
+    public function testResetStateDropsTheMemoisedMapLikeReset(): void
+    {
+        $this->storeManager->expects($this->exactly(2))->method('getStores')
+            ->willReturn([$this->makeStore(1, true, 'https://uk/')]);
+        $this->config->method('getHreflangExcludedStoreIds')->willReturn([]);
+        $this->scopeConfig->method('getValue')->willReturn('en_GB');
+        $map = new StoreLocaleMap($this->storeManager, $this->scopeConfig, $this->config);
+
+        $map->getMap();
+        $map->_resetState();
+        $map->getMap();
+    }
+
     public function testStoresSharingALocaleAreDeduplicatedLowestStoreIdWins(): void
     {
         // Two hreflang entries with the same value are invalid; only one en-US

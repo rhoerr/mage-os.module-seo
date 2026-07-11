@@ -53,6 +53,13 @@ become public contract.
 - robots.txt AI-crawler directives emit `Disallow: /` groups only for
   disallowed bots; allowed bots previously received dedicated `Allow: /` groups
   that exempted them from all `User-agent: *` rules.
+- Request-scoped shared instances (FAQ collector, product schema registry, CMS
+  page resolver, hreflang store-locale map, category config/product-override
+  repositories) implement `ResetAfterRequestInterface` so their state cannot
+  leak between requests under long-lived application servers (e.g. FrankenPHP
+  worker mode). The category repositories also stop caching the DB adapter at
+  construction — `ResourceConnection::_resetState()` closes connections between
+  requests, which would leave a cached handle stale.
 
 ### Changed
 

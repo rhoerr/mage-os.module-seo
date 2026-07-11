@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MageOS\Seo\Model\Hreflang;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Config;
@@ -15,7 +16,7 @@ use MageOS\Seo\Model\Config;
  * Excluded and inactive stores are filtered here so downstream resolvers and the sitemap never see
  * them. Built once per request and memoised.
  */
-class StoreLocaleMap
+class StoreLocaleMap implements ResetAfterRequestInterface
 {
     /**
      * @var array<int, array{base_url: string, locale: string, language: string}>|null
@@ -109,6 +110,16 @@ class StoreLocaleMap
     public function reset(): void
     {
         $this->map = null;
+    }
+
+    /**
+     * Drop the memoised map between worker-mode requests (delegates to reset()).
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->reset();
     }
 
     /**

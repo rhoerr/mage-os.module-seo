@@ -6,12 +6,10 @@ namespace MageOS\Seo\Model\Category;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 
-class ConfigRepository
+class ConfigRepository implements ResetAfterRequestInterface
 {
-    /** @var \Magento\Framework\DB\Adapter\AdapterInterface */
-    private AdapterInterface $connection;
-
     /** @var array<string, mixed[]> */
     private array $cache = [];
 
@@ -21,7 +19,6 @@ class ConfigRepository
     public function __construct(
         private readonly ResourceConnection $resourceConnection
     ) {
-        $this->connection = $resourceConnection->getConnection();
     }
 
     /**
@@ -87,8 +84,9 @@ class ConfigRepository
      */
     private function loadRow(int $categoryId, int $storeId = 0): array
     {
-        $table  = $this->resourceConnection->getTableName('mageos_seo_category_config');
-        $select = $this->connection->select()
+        $connection = $this->getConnection();
+        $table      = $this->resourceConnection->getTableName('mageos_seo_category_config');
+        $select     = $connection->select()
             ->from($table)
             ->where('category_id = ?', $categoryId);
 
@@ -96,7 +94,7 @@ class ConfigRepository
             $select->where('store_id IN (?)', [0, $storeId])
                    ->order('store_id ASC'); // global row first, store-specific row second
 
-            $rows = $this->connection->fetchAll($select);
+            $rows = $connection->fetchAll($select);
             if (empty($rows)) {
                 return [];
             }
@@ -117,7 +115,7 @@ class ConfigRepository
         }
 
         $select->where('store_id = ?', 0);
-        $row = $this->connection->fetchRow($select);
+        $row = $connection->fetchRow($select);
         return \is_array($row) ? $row : [];
     }
 
@@ -144,7 +142,7 @@ class ConfigRepository
         $data['category_id'] = $categoryId;
         $data['store_id']    = $storeId;
 
-        $this->connection->insertOnDuplicate($table, $data, array_keys($data));
+        $this->getConnection()->insertOnDuplicate($table, $data, array_keys($data));
         unset($this->cache["{$categoryId}_{$storeId}"]);
     }
 
@@ -171,5 +169,27 @@ class ConfigRepository
         }
 
         return $row;
+    }
+
+    /**
+     * Clear the memoised rows between worker-mode requests.
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->cache = [];
+    }
+
+    /**
+     * Fetch the connection per operation — never cache the adapter on the
+     * instance: ResourceConnection::_resetState() closes connections between
+     * worker-mode requests, which would leave a cached handle stale.
+     *
+     * @return AdapterInterface
+     */
+    private function getConnection(): AdapterInterface
+    {
+        return $this->resourceConnection->getConnection();
     }
 }
