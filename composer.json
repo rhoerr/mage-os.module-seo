@@ -2,22 +2,32 @@
     "name": "mage-os/module-seo",
     "description": "SEO module: JSON-LD structured data, meta tags, canonical management, and AI discoverability",
     "type": "magento2-module",
-    "version": "1.1.0",
+    "license": "OSL-3.0",
     "minimum-stability": "stable",
     "require": {
         "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
         "magento/framework": "*",
+        "magento/framework-message-queue": "*",
+        "magento/module-backend": "*",
+        "magento/module-cache-invalidate": "*",
         "magento/module-catalog": "*",
-        "magento/module-store": "*",
+        "magento/module-catalog-inventory": "*",
         "magento/module-cms": "*",
-        "magento/module-robots": "*"
+        "magento/module-config": "*",
+        "magento/module-directory": "*",
+        "magento/module-media-storage": "*",
+        "magento/module-message-queue": "*",
+        "magento/module-page-cache": "*",
+        "magento/module-robots": "*",
+        "magento/module-store": "*",
+        "magento/module-ui": "*",
+        "magento/module-widget": "*"
     },
     "require-dev": {
         "bitexpert/phpstan-magento": "^0.42",
         "friendsofphp/php-cs-fixer": "^3.50",
         "infection/infection": "^0.29",
         "magento/magento-coding-standard": "^40",
-        "magento/module-cache-invalidate": "*",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpunit/phpunit": "^10.5"
@@ -34,8 +44,9 @@
         "sort-packages": true,
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true,
+            "infection/extension-installer": true,
             "magento/composer-dependency-version-audit-plugin": true,
-            "infection/extension-installer": true
+            "magento/magento-composer-installer": false
         }
     },
     "prefer-stable": true,
@@ -50,7 +61,7 @@
         "test:phpstan":   "phpstan analyse --memory-limit=1G",
         "test:cs-fixer":  "php-cs-fixer fix --dry-run --diff --allow-risky=yes",
         "test:phpcs":     "phpcs --standard=phpcs.xml.dist",
-        "test:infection": "infection --min-msi=75 --threads=4",
+        "test:infection": "infection --threads=4",
         "test":           ["@test:unit", "@test:phpstan", "@test:cs-fixer", "@test:phpcs"]
     }
 }

@@ -6,13 +6,20 @@
     // without dedicated tests) are excluded because Infection cannot boot the
     // Magento framework to run those suites locally.
     "source": {
+        // Cron is excluded entirely: RegenerateFeeds is framework glue around
+        // store emulation and only testable against a booted Magento.
         "directories": ["Model", "Observer", "Service"],
         "excludes": [
             "ResourceModel",
+            "Catalog/CurrentEntity.php",
             "Category",
             "Cms",
             "Config/Source/LogoSource.php",
             "Config/Source/OrgType.php",
+            "Feed/CanonicalPathRedirect.php",
+            "Feed/FeedRegenerator.php",
+            "Feed/FeedStorage.php",
+            "LlmsJsonl/JsonlBuilder.php",
             "LlmsTxt",
             "MetaTag/Provider",
             "Organisation.php",
