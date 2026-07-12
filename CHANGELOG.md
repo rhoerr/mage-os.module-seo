@@ -35,7 +35,10 @@ become public contract.
   out-of-stock products emit `BackOrder` availability.
 - GTIN values are validated (length + GS1 check digit) and emitted under the
   matching property (`gtin8`/`gtin12`/`gtin13`/`gtin14`); invalid values are
-  omitted instead of producing Search Console errors.
+  omitted instead of producing Search Console errors. The Electronics, Tool and
+  Stationery builders previously set `gtin13` from the barcode attribute without
+  this validation (only the override path was validated); they now route the
+  attribute value through the validator like every other builder.
 - `CanonicalUrlManager` removes existing canonicals by asset content type
   instead of a URL-key pattern that could remove arbitrary CSS/JS assets.
 - Per-store category/product SEO overrides read and write the store view from
