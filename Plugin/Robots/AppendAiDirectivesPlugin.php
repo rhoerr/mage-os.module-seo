@@ -33,17 +33,17 @@ class AppendAiDirectivesPlugin
      * Append AI crawler directives after the standard robots.txt content.
      *
      * @param Robots $subject
-     * @param string $result
+     * @param string|null $result
      * @return string
      */
-    public function afterGetData(Robots $subject, string $result): string
+    public function afterGetData(Robots $subject, ?string $result): string
     {
         $directives = $this->buildAiDirectives();
         if ($directives === '') {
-            return $result;
+            return $result ?? '';
         }
 
-        return rtrim($result) . "\n\n" . $directives . "\n";
+        return rtrim($result ?? '') . "\n\n" . $directives . "\n";
     }
 
     /**
