@@ -96,6 +96,13 @@ become public contract.
   identifier resolves to `null`).
 - composer.json declares all hard module dependencies, a `license` field
   (OSL-3.0), and no longer hardcodes a package version.
+- Support floor is Magento/Mage-OS **2.4.6-p15+** (`magento/framework`
+  pinned `^103.0.6-p15`). The module runs unchanged across the range: a bundled
+  `Compat/ResetAfterRequestInterface` polyfill (loaded from `registration.php`
+  behind `interface_exists`) covers versions below 2.4.7 that lack the
+  worker-mode reset interface, and `Model\Cache\CleaningMode` resolves the
+  full-page-cache cleaning-mode identifier that only 2.4.9's
+  `Magento\Framework\Cache\CacheConstants` exposes.
 - Feed generation is queue-based: invalidations (and requests hitting a missing
   file) queue a rebuild on the `mageosSeoFeedRegenerate` consumer with duplicate
   requests collapsed via a pending flag; web requests never build feeds and answer
