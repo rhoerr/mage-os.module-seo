@@ -20,10 +20,20 @@
                 <full_enabled>1</full_enabled>
                 <jsonl_enabled>0</jsonl_enabled>
             </llms_txt>
+            <feeds>
+                <!-- empty = var/mageos_seo; multi-host deployments set a shared mount -->
+                <storage_dir/>
+            </feeds>
             <robots_meta>
-                <product_default>INDEX,FOLLOW</product_default>
-                <category_default>INDEX,FOLLOW</category_default>
-                <cms_page_default>INDEX,FOLLOW</cms_page_default>
+                <!--
+                    Defaults are intentionally empty ("no opinion"): the providers then
+                    return nothing and Magento core's design/search_engine_robots config
+                    stays in charge — a staging site set to NOINDEX,NOFOLLOW must not be
+                    re-opened just by installing this module. Merchants opt in per scope.
+                -->
+                <product_default/>
+                <category_default/>
+                <cms_page_default/>
                 <paginated_enabled>0</paginated_enabled>
                 <paginated_robots>NOINDEX,FOLLOW</paginated_robots>
             </robots_meta>
@@ -31,6 +41,8 @@
                 <enabled>1</enabled>
                 <language_only_enabled>1</language_only_enabled>
                 <sitemap_enabled>1</sitemap_enabled>
+                <!-- B2B/staging websites must not leak into each other's alternates -->
+                <same_website_only>1</same_website_only>
             </hreflang>
             <aeo>
                 <speakable_enabled>0</speakable_enabled>

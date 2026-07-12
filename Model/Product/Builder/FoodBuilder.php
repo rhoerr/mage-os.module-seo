@@ -62,39 +62,45 @@ class FoodBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode') ?: $this->attr($product, 'ean');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
+        // Nutrition, allergens and alcohol content have no Product property on
+        // schema.org (they belong to MenuItem/Recipe/DietarySupplement), so they
+        // are expressed as additionalProperty entries.
         if (\in_array('nutritionInformation', $enabledFields, true)) {
             $raw = $overrides['nutritionInformation'] ?? $this->attr($product, 'nutrition_info');
             if ($raw !== '') {
                 $decoded = \is_array($raw) ? $raw : json_decode($raw, true);
-                if (\is_array($decoded)) {
-                    $nutrition = ['@type' => 'NutritionInformation'];
-                    foreach ($decoded as $k => $v) {
-                        $nutrition[$k] = $v;
-                    }
-                    $schema['nutritionInformation'] = $nutrition;
-                } else {
-                    $schema['nutritionInformation'] = $raw;
-                }
+                $schema  = $this->addAdditionalProperty(
+                    $schema,
+                    'nutritionInformation',
+                    \is_array($decoded) ? json_encode($decoded) : $raw
+                );
             }
         }
 
         if (\in_array('containsAllergen', $enabledFields, true)) {
             $allergens = $overrides['containsAllergen'] ?? $this->attr($product, 'allergens');
             if ($allergens !== '') {
-                $schema['containsAllergen'] = \is_array($allergens)
+                $list = \is_array($allergens)
                     ? $allergens
                     : array_filter(array_map('trim', explode(',', $allergens)));
+                if (!empty($list)) {
+                    $schema = $this->addAdditionalProperty($schema, 'allergens', implode(', ', $list));
+                }
             }
         }
 
         if (\in_array('isAlcoholicBeverage', $enabledFields, true)) {
             $isAlcohol = $overrides['isAlcoholicBeverage'] ?? $this->attr($product, 'is_alcoholic_beverage');
             if ($isAlcohol !== '') {
-                $schema['isAlcoholicBeverage'] = filter_var($isAlcohol, FILTER_VALIDATE_BOOLEAN);
+                $schema = $this->addAdditionalProperty(
+                    $schema,
+                    'alcoholicBeverage',
+                    filter_var($isAlcohol, FILTER_VALIDATE_BOOLEAN) ? 'Yes' : 'No'
+                );
             }
         }
 
@@ -127,9 +133,12 @@ class FoodBuilder extends AbstractBuilder
 
     /**
      * @inheritdoc
+     *
+     * "FoodProduct" does not exist in the schema.org vocabulary; food items are
+     * plain Products with category data in additionalProperty.
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
-        return 'FoodProduct';
+        return 'Product';
     }
 }

@@ -10,20 +10,20 @@
     <body>
         <referenceBlock name="head.additional">
             <block class="MageOS\Seo\Block\Canonical"
-                   name="rs_seo.canonical"
+                   name="mageos_seo.canonical"
                    template="MageOS_Seo::seo/canonical.phtml"/>
 
             <block class="MageOS\Seo\Block\Hreflang"
-                   name="rs_seo.hreflang"
+                   name="mageos_seo.hreflang"
                    template="MageOS_Seo::seo/hreflang.phtml"
-                   after="rs_seo.canonical"/>
+                   after="mageos_seo.canonical"/>
 
             <block class="MageOS\Seo\Block\JsonLd"
-                   name="rs_seo.json_ld"
+                   name="mageos_seo.json_ld"
                    template="MageOS_Seo::seo/json-ld.phtml"/>
 
             <block class="MageOS\Seo\Block\MetaTags"
-                   name="rs_seo.meta_tags"
+                   name="mageos_seo.meta_tags"
                    template="MageOS_Seo::seo/meta-tags.phtml"/>
         </referenceBlock>
 
@@ -34,7 +34,7 @@
         -->
         <referenceContainer name="before.body.end">
             <block class="MageOS\Seo\Block\FaqJsonLd"
-                   name="rs_seo.faq_json_ld"
+                   name="mageos_seo.faq_json_ld"
                    template="MageOS_Seo::faq/json-ld.phtml"/>
         </referenceContainer>
     </body>

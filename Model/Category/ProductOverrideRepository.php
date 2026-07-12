@@ -6,12 +6,10 @@ namespace MageOS\Seo\Model\Category;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 
-class ProductOverrideRepository
+class ProductOverrideRepository implements ResetAfterRequestInterface
 {
-    /** @var \Magento\Framework\DB\Adapter\AdapterInterface */
-    private AdapterInterface $connection;
-
     /** @var array<string, mixed[]> */
     private array $cache = [];
 
@@ -21,7 +19,6 @@ class ProductOverrideRepository
     public function __construct(
         private readonly ResourceConnection $resourceConnection
     ) {
-        $this->connection = $resourceConnection->getConnection();
     }
 
     /**
@@ -40,10 +37,11 @@ class ProductOverrideRepository
             return $this->cache[$cacheKey];
         }
 
-        $table = $this->connection->getTableName('mage-os_seo_product_override');
+        $connection = $this->getConnection();
+        $table      = $this->resourceConnection->getTableName('mageos_seo_product_override');
 
-        $rows = $this->connection->fetchAll(
-            $this->connection->select()
+        $rows = $connection->fetchAll(
+            $connection->select()
                 ->from($table)
                 ->where('product_id = ?', $productId)
                 ->where('store_id IN (?)', [0, $storeId])
@@ -80,7 +78,7 @@ class ProductOverrideRepository
      */
     public function save(int $productId, int $storeId, array $data): void
     {
-        $table = $this->connection->getTableName('mage-os_seo_product_override');
+        $table = $this->resourceConnection->getTableName('mageos_seo_product_override');
 
         if (isset($data['override_fields']) && \is_array($data['override_fields'])) {
             $data['override_fields'] = json_encode($data['override_fields']);
@@ -89,7 +87,29 @@ class ProductOverrideRepository
         $data['product_id'] = $productId;
         $data['store_id']   = $storeId;
 
-        $this->connection->insertOnDuplicate($table, $data, array_keys($data));
+        $this->getConnection()->insertOnDuplicate($table, $data, array_keys($data));
         unset($this->cache["{$productId}_{$storeId}"]);
+    }
+
+    /**
+     * Clear the memoised rows between worker-mode requests.
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->cache = [];
+    }
+
+    /**
+     * Fetch the connection per operation — never cache the adapter on the
+     * instance: ResourceConnection::_resetState() closes connections between
+     * worker-mode requests, which would leave a cached handle stale.
+     *
+     * @return AdapterInterface
+     */
+    private function getConnection(): AdapterInterface
+    {
+        return $this->resourceConnection->getConnection();
     }
 }

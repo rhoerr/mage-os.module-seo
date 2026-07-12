@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\Hreflang\Resolver;
 
 use Magento\Catalog\Api\Data\CategoryInterface;
-use Magento\Framework\Registry;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Hreflang\LinkBuilder;
 use MageOS\Seo\Model\Hreflang\Resolver\CategoryHreflangResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -14,9 +14,9 @@ use PHPUnit\Framework\TestCase;
 class CategoryHreflangResolverTest extends TestCase
 {
     /**
-     * @var Registry&MockObject
+     * @var CurrentEntity&MockObject
      */
-    private Registry&MockObject $registry;
+    private CurrentEntity&MockObject $currentEntity;
 
     /**
      * @var LinkBuilder&MockObject
@@ -30,9 +30,9 @@ class CategoryHreflangResolverTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->registry    = $this->createMock(Registry::class);
+        $this->currentEntity    = $this->createMock(CurrentEntity::class);
         $this->linkBuilder = $this->createMock(LinkBuilder::class);
-        $this->resolver    = new CategoryHreflangResolver($this->registry, $this->linkBuilder);
+        $this->resolver    = new CategoryHreflangResolver($this->currentEntity, $this->linkBuilder);
     }
 
     public function testHandlesCategoryView(): void
@@ -42,7 +42,7 @@ class CategoryHreflangResolverTest extends TestCase
 
     public function testReturnsEmptyWhenNoCurrentCategory(): void
     {
-        $this->registry->method('registry')->with('current_category')->willReturn(null);
+        $this->currentEntity->method('getCategory')->willReturn(null);
         $this->assertSame([], $this->resolver->getLinks());
     }
 
@@ -50,7 +50,7 @@ class CategoryHreflangResolverTest extends TestCase
     {
         $category = $this->createMock(CategoryInterface::class);
         $category->method('getId')->willReturn(7);
-        $this->registry->method('registry')->with('current_category')->willReturn($category);
+        $this->currentEntity->method('getCategory')->willReturn($category);
 
         $links = [['hreflang' => 'de-DE', 'url' => 'https://de/c', 'store_id' => 2]];
         $this->linkBuilder->method('build')->with('category', 7)->willReturn($links);

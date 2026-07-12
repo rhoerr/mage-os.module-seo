@@ -70,7 +70,7 @@ class SoftwareBuilder extends AbstractBuilder
         if (\in_array('gtin13', $enabledFields, true)) {
             $gtin = $overrides['gtin13'] ?? $this->attr($product, 'barcode');
             if ($gtin !== '') {
-                $schema['gtin13'] = $gtin;
+                $schema = $this->applyGtin($schema, (string) $gtin);
             }
         }
 
@@ -79,9 +79,12 @@ class SoftwareBuilder extends AbstractBuilder
 
     /**
      * @inheritdoc
+     *
+     * Multi-type: SoftwareApplication alone is a CreativeWork subtype, which
+     * forfeits Product rich-result eligibility; Product must accompany it.
      */
-    protected function getSchemaType(): string
+    protected function getSchemaType(): string|array
     {
-        return 'SoftwareApplication';
+        return ['Product', 'SoftwareApplication'];
     }
 }

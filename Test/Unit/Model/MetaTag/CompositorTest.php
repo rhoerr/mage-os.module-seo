@@ -8,6 +8,7 @@ use Magento\Framework\View\Layout;
 use Magento\Framework\View\Layout\ProcessorInterface;
 use MageOS\Seo\Api\MetaTagProviderInterface;
 use MageOS\Seo\Model\MetaTag\Compositor;
+use MageOS\Seo\Model\Pool\HandleMatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -45,7 +46,7 @@ class CompositorTest extends TestCase
     public function testReturnsEmptyArrayWhenNoProviders(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $compositor = new Compositor($this->layout, []);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), []);
         $this->assertSame([], $compositor->getMetaTags());
     }
 
@@ -56,7 +57,7 @@ class CompositorTest extends TestCase
             ['catalog_product_view'],
             [['property' => 'og:title', 'content' => 'My Product']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $tags = $compositor->getMetaTags();
         $this->assertCount(1, $tags);
         $this->assertSame('My Product', $tags[0]['content']);
@@ -69,7 +70,7 @@ class CompositorTest extends TestCase
             ['*'],
             [['property' => 'og:type', 'content' => 'website']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $tags = $compositor->getMetaTags();
         $this->assertCount(1, $tags);
     }
@@ -81,7 +82,7 @@ class CompositorTest extends TestCase
             ['catalog_product_view'],
             [['property' => 'og:title', 'content' => 'Product']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame([], $compositor->getMetaTags());
     }
 
@@ -96,7 +97,7 @@ class CompositorTest extends TestCase
                 ['property' => 'og:url',   'content' => null],
             ]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $tags = $compositor->getMetaTags();
         $this->assertCount(1, $tags);
         $this->assertSame('product', $tags[0]['content']);
@@ -105,7 +106,7 @@ class CompositorTest extends TestCase
     public function testNonProviderObjectsInArrayAreSkipped(): void
     {
         $this->layoutUpdate->method('getHandles')->willReturn(['catalog_product_view']);
-        $compositor = new Compositor($this->layout, [new \stdClass(), 'not-a-provider']);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [new \stdClass(), 'not-a-provider']);
         $this->assertSame([], $compositor->getMetaTags());
     }
 
@@ -120,7 +121,7 @@ class CompositorTest extends TestCase
             ['*'],
             [['property' => 'og:type', 'content' => 'product']]
         );
-        $compositor = new Compositor($this->layout, [$p1, $p2]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$p1, $p2]);
         $this->assertCount(2, $compositor->getMetaTags());
     }
 
@@ -135,7 +136,7 @@ class CompositorTest extends TestCase
             ['catalog_product_view', 'catalog_category_view'],
             [['property' => 'og:title', 'content' => 'Matched']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $tags = $compositor->getMetaTags();
         $this->assertCount(1, $tags);
     }
@@ -147,7 +148,7 @@ class CompositorTest extends TestCase
             ['catalog_product_view', 'catalog_category_view'],
             [['property' => 'og:title', 'content' => 'Should not appear']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame([], $compositor->getMetaTags());
     }
 
@@ -160,7 +161,7 @@ class CompositorTest extends TestCase
             ['catalog_product_view'],
             [['property' => 'og:price:amount', 'content' => '0']]
         );
-        $compositor = new Compositor($this->layout, [$provider]);
+        $compositor = new Compositor($this->layout, new HandleMatcher(), [$provider]);
         $this->assertSame([], $compositor->getMetaTags());
     }
 }

@@ -22,7 +22,7 @@ class RobotsMetaTest extends TestCase
     public function testToOptionArrayReturnsAllOptions(): void
     {
         $options = $this->source->toOptionArray();
-        $this->assertCount(7, $options);
+        $this->assertCount(8, $options);
     }
 
     public function testIncludesRichPreviewDirective(): void

@@ -29,11 +29,11 @@ class UrlRewriteFetcherTest extends TestCase
         $select           = $this->createMock(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
-        $this->connection->method('getTableName')->willReturn('url_rewrite');
         $this->connection->method('select')->willReturn($select);
 
         $resource = $this->createMock(ResourceConnection::class);
         $resource->method('getConnection')->willReturn($this->connection);
+        $resource->method('getTableName')->willReturn('url_rewrite');
 
         $this->fetcher = new UrlRewriteFetcher($resource);
     }

@@ -38,13 +38,17 @@ class CurrencyService
      * Get the current store's base currency code.
      * e.g. "GBP" — the currency the store is configured in, regardless
      * of what the customer has switched to.
+     *
+     * Returns an empty string when no store context can be resolved: callers all
+     * run with a resolved store, so inventing a currency here would only mask a
+     * broken store context with wrong data.
      */
     public function getBaseCurrencyCode(?int $storeId = null): string
     {
         try {
             return $this->getStore($storeId)->getBaseCurrencyCode();
         } catch (\Exception) {
-            return 'GBP';
+            return '';
         }
     }
 

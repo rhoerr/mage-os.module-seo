@@ -47,8 +47,8 @@
                 </field>
                 <field id="price_valid_until_months" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Price Valid Until (months)</label>
-                    <comment>Number of months from today to set as priceValidUntil on offers. Default: 12.</comment>
-                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <comment>Months from today to use as priceValidUntil when a product has no active special-price end date (which always wins). Set 0 to omit the synthetic date entirely. Default: 12.</comment>
+                    <validate>validate-digits</validate>
                 </field>
                 <field id="aggregate_rating_enabled" translate="label comment" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enable AggregateRating</label>
@@ -76,19 +76,30 @@
                 </field>
             </group>
 
+            <group id="feeds" translate="label" type="text" sortOrder="35" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Feed Storage</label>
+                <field id="storage_dir" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Storage Directory</label>
+                    <comment>Absolute path for pre-generated feed files (llms.txt, llms.jsonl, hreflang sitemap). Leave empty to use var/mageos_seo. On multi-server deployments set a mount shared between web servers and the cron/consumer host.</comment>
+                </field>
+            </group>
+
             <group id="robots_meta" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Robots Meta Defaults</label>
-                <field id="product_default" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="product_default" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Product Pages Default</label>
                     <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                    <comment>When set to "Use Magento Default", the core Design &gt; Search Engine Robots setting applies.</comment>
                 </field>
-                <field id="category_default" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="category_default" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Category Pages Default</label>
                     <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                    <comment>When set to "Use Magento Default", the core Design &gt; Search Engine Robots setting applies.</comment>
                 </field>
-                <field id="cms_page_default" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="cms_page_default" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>CMS Pages Default</label>
                     <source_model>MageOS\Seo\Model\Config\Source\RobotsMeta</source_model>
+                    <comment>When set to "Use Magento Default", the core Design &gt; Search Engine Robots setting applies.</comment>
                 </field>
                 <field id="paginated_enabled" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Override Robots on Paginated Pages</label>
@@ -131,6 +142,11 @@
                     <comment>Serve a dedicated hreflang sitemap at /hreflang-sitemap.xml. Submit it in Google Search Console alongside your main sitemap.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="same_website_only" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Limit Alternates to Current Website</label>
+                    <comment>Only link store views of the same website as hreflang alternates. Disable only when separate websites really are language/region variants of the same content.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
 
             <group id="aeo" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -151,7 +167,7 @@
                 <label>AI Crawler robots.txt Directives</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Append AI Crawler Directives</label>
-                    <comment>Add per-user-agent Allow/Disallow blocks for known AI crawlers to robots.txt.</comment>
+                    <comment>Add a "Disallow: /" robots.txt group for each AI crawler selected below. Crawlers not selected keep following your standard "User-agent: *" rules.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="disallowed" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">

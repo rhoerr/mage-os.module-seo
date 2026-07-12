@@ -6,15 +6,17 @@ namespace MageOS\Seo\Test\Unit\Model\Product\Builder;
 
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\CatalogInventory\Api\Data\StockItemInterface;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Pricing\Price\PriceInterface;
 use Magento\Framework\Pricing\PriceInfoInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
 use MageOS\Seo\Model\Product\Builder\ApparelBuilder;
+use MageOS\Seo\Model\Product\GtinValidator;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,9 +39,9 @@ class ApparelBuilderTest extends TestCase
     private CurrencyService&MockObject $currencyService;
 
     /**
-     * @var StockRegistryInterface&MockObject
+     * @var AvailabilityResolver&MockObject
      */
-    private StockRegistryInterface&MockObject $stockRegistry;
+    private AvailabilityResolver&MockObject $availabilityResolver;
 
     /**
      * @var ImageHelper&MockObject
@@ -81,7 +83,7 @@ class ApparelBuilderTest extends TestCase
         $this->storeManager    = $this->createMock(StoreManagerInterface::class);
         $this->store           = $this->createMock(Store::class);
         $this->currencyService = $this->createMock(CurrencyService::class);
-        $this->stockRegistry   = $this->createMock(StockRegistryInterface::class);
+        $this->availabilityResolver = $this->createMock(AvailabilityResolver::class);
         $this->imageHelper     = $this->createMock(ImageHelper::class);
         $this->seoConfig       = $this->createMock(Config::class);
         $this->dateTime        = $this->createMock(DateTime::class);
@@ -92,6 +94,7 @@ class ApparelBuilderTest extends TestCase
         $this->storeManager->method('getStore')->willReturn($this->store);
         $this->store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->currencyService->method('getCurrentCurrencyCode')->willReturn('GBP');
+        $this->currencyService->method('convertFromBase')->willReturnArgument(0);
         $this->finalPrice->method('getValue')->willReturn(59.99);
         $this->priceInfo->method('getPrice')->with('final_price')->willReturn($this->finalPrice);
         $this->product->method('getPriceInfo')->willReturn($this->priceInfo);
@@ -107,23 +110,19 @@ class ApparelBuilderTest extends TestCase
         $this->builder = new ApparelBuilder(
             $this->storeManager,
             $this->currencyService,
-            $this->stockRegistry,
+            $this->availabilityResolver,
             $this->imageHelper,
             $this->seoConfig,
-            $this->dateTime
+            $this->dateTime,
+            new OfferEnricherPool(),
+            new AggregateRatingResolver(),
+            new GtinValidator()
         );
-    }
-
-    private function makeStockItem(bool $inStock): StockItemInterface&MockObject
-    {
-        $item = $this->createMock(StockItemInterface::class);
-        $item->method('getIsInStock')->willReturn($inStock);
-        return $item;
     }
 
     private function withInStock(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
     }
 
     public function testGetTemplateCode(): void
@@ -147,11 +146,12 @@ class ApparelBuilderTest extends TestCase
         $this->assertArrayHasKey('pattern', $fields);
     }
 
-    public function testBuildReturnsApparelType(): void
+    public function testBuildReturnsProductType(): void
     {
+        // "Apparel" is not a schema.org type; apparel items are plain Products.
         $this->withInStock();
         $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertSame('Apparel', $schema['@type']);
+        $this->assertSame('Product', $schema['@type']);
     }
 
     public function testBuildBrandFromManufacturerAttributeWhenEnabled(): void
@@ -195,11 +195,13 @@ class ApparelBuilderTest extends TestCase
         $this->assertSame('Red', $schema['color']);
     }
 
-    public function testBuildColorAlsoAddedToOffersNode(): void
+    public function testBuildColorNotAddedToOffersNode(): void
     {
+        // schema.org defines color on Product, not on Offer.
         $this->withInStock();
         $schema = $this->builder->build($this->product, ['color'], [], ['color' => 'Green']);
-        $this->assertSame('Green', $schema['offers']['color']);
+        $this->assertSame('Green', $schema['color']);
+        $this->assertArrayNotHasKey('color', $schema['offers']);
     }
 
     public function testBuildColorNotIncludedWhenFieldNotEnabled(): void
@@ -214,7 +216,8 @@ class ApparelBuilderTest extends TestCase
         $this->withInStock();
         $schema = $this->builder->build($this->product, ['size'], [], ['size' => 'XL']);
         $this->assertSame('XL', $schema['size']);
-        $this->assertSame('XL', $schema['offers']['size']);
+        // schema.org defines size on Product, not on Offer.
+        $this->assertArrayNotHasKey('size', $schema['offers']);
     }
 
     public function testBuildSizeFromProductAttributeWhenEnabled(): void

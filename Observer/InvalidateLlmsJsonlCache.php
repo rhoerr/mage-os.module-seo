@@ -4,40 +4,34 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Observer;
 
-use Magento\CacheInvalidate\Model\PurgeCache;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\PageCache\Model\Config;
+use MageOS\Seo\Model\Feed\FeedInvalidator;
 
 /**
- * Purges only the /llms.jsonl FPC tag when a product changes.
+ * Invalidates only the /llms.jsonl feed when a product changes.
  *
  * Kept separate from the llms.txt/llms-full.txt invalidation so a product save does not
- * needlessly purge the narrative documents (which depend on org/category data, not products).
- * When Varnish is off, the response max-age handles freshness.
+ * needlessly regenerate the narrative documents (which depend on org/category data, not products).
  */
 class InvalidateLlmsJsonlCache implements ObserverInterface
 {
     /**
-     * @param Config $config
-     * @param PurgeCache $purgeCache
+     * @param FeedInvalidator $feedInvalidator
      */
     public function __construct(
-        private readonly Config     $config,
-        private readonly PurgeCache $purgeCache
+        private readonly FeedInvalidator $feedInvalidator
     ) {
     }
 
     /**
-     * Purge the llms.jsonl cache tag on product save.
+     * Invalidate the llms.jsonl feed file and cached responses on product save.
      *
      * @param Observer $observer
      * @return void
      */
     public function execute(Observer $observer): void
     {
-        if ((int) $this->config->getType() === Config::VARNISH && $this->config->isEnabled()) {
-            $this->purgeCache->sendPurgeRequest(['((^|,)RS_LLMS_JSONL(,|$))']);
-        }
+        $this->feedInvalidator->invalidateJsonl();
     }
 }

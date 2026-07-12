@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Test\Unit\Model\Canonical;
 
+use Magento\Framework\View\Asset\AssetInterface;
 use Magento\Framework\View\Asset\GroupedCollection;
 use Magento\Framework\View\Page\Config as PageConfig;
 use MageOS\Seo\Model\Canonical\CanonicalUrlManager;
@@ -35,6 +36,16 @@ class CanonicalUrlManagerTest extends TestCase
         $this->manager = new CanonicalUrlManager();
     }
 
+    /**
+     * Build an asset mock reporting the given content type.
+     */
+    private function makeAsset(string $contentType): AssetInterface&MockObject
+    {
+        $asset = $this->createMock(AssetInterface::class);
+        $asset->method('getContentType')->willReturn($contentType);
+        return $asset;
+    }
+
     public function testSetCanonicalCallsAddRemotePageAsset(): void
     {
         $this->assetCollection->method('getAll')->willReturn([]);
@@ -50,13 +61,12 @@ class CanonicalUrlManagerTest extends TestCase
         $this->manager->setCanonical('https://example.com/my-product', $this->pageConfig);
     }
 
-    public function testSetCanonicalWithUrlKeyRemovesMatchingAsset(): void
+    public function testSetCanonicalRemovesExistingCanonicalAssets(): void
     {
-        $existingAssets = [
-            'https://example.com/my-product' => 'asset',
-            'styles.css' => 'css-asset',
-        ];
-        $this->assetCollection->method('getAll')->willReturn($existingAssets);
+        $this->assetCollection->method('getAll')->willReturn([
+            'https://example.com/my-product' => $this->makeAsset('canonical'),
+            'css/styles.css'                 => $this->makeAsset('css'),
+        ]);
         $this->assetCollection
             ->expects($this->once())
             ->method('remove')
@@ -64,72 +74,28 @@ class CanonicalUrlManagerTest extends TestCase
 
         $this->pageConfig->method('addRemotePageAsset')->willReturnSelf();
 
-        $this->manager->setCanonical(
-            'https://example.com/my-product?variant=red',
-            $this->pageConfig,
-            'my-product'
-        );
+        $this->manager->setCanonical('https://example.com/my-product?variant=red', $this->pageConfig);
     }
 
-    public function testSetCanonicalWithUrlKeyRemovesHtmlSuffixVariant(): void
+    public function testRemovalIgnoresNonCanonicalAssetsWhoseIdentifierMatchesUrlKey(): void
     {
-        $existingAssets = [
-            'https://example.com/my-product.html' => 'asset',
-        ];
-        $this->assetCollection->method('getAll')->willReturn($existingAssets);
-        $this->assetCollection
-            ->expects($this->once())
-            ->method('remove')
-            ->with('https://example.com/my-product.html');
-
-        $this->pageConfig->method('addRemotePageAsset')->willReturnSelf();
-
-        $this->manager->setCanonical(
-            'https://example.com/my-product',
-            $this->pageConfig,
-            'my-product'
-        );
-    }
-
-    public function testSetCanonicalWithEmptyUrlKeySkipsRemoval(): void
-    {
-        $this->assetCollection->expects($this->never())->method('getAll');
+        // Regression: identifier-pattern matching removed css/print.css for a product
+        // with url_key "print" — only content type "canonical" may be removed.
+        $this->assetCollection->method('getAll')->willReturn([
+            'css/print.css' => $this->makeAsset('css'),
+            'js/print.js'   => $this->makeAsset('js'),
+        ]);
         $this->assetCollection->expects($this->never())->method('remove');
         $this->pageConfig->method('addRemotePageAsset')->willReturnSelf();
 
-        $this->manager->setCanonical('https://example.com/page', $this->pageConfig, '');
-    }
-
-    public function testSetCanonicalWithoutUrlKeyDefaultSkipsRemoval(): void
-    {
-        $this->assetCollection->expects($this->never())->method('getAll');
-        $this->assetCollection->expects($this->never())->method('remove');
-        $this->pageConfig->method('addRemotePageAsset')->willReturnSelf();
-
-        $this->manager->setCanonical('https://example.com/page', $this->pageConfig);
-    }
-
-    public function testRemovalDoesNotAffectNonMatchingAssets(): void
-    {
-        $existingAssets = [
-            'https://example.com/other-product' => 'asset',
-            'https://example.com/my-product-extended' => 'asset2',
-        ];
-        $this->assetCollection->method('getAll')->willReturn($existingAssets);
-        $this->assetCollection->expects($this->never())->method('remove');
-        $this->pageConfig->method('addRemotePageAsset')->willReturnSelf();
-
-        $this->manager->setCanonical(
-            'https://example.com/my-product',
-            $this->pageConfig,
-            'my-product'
-        );
+        $this->manager->setCanonical('https://example.com/print', $this->pageConfig, 'print');
     }
 
     public function testSetCanonicalAlwaysAddsNewCanonicalEvenAfterRemoval(): void
     {
-        $existingAssets = ['https://example.com/product.html' => 'asset'];
-        $this->assetCollection->method('getAll')->willReturn($existingAssets);
+        $this->assetCollection->method('getAll')->willReturn([
+            'https://example.com/product.html' => $this->makeAsset('canonical'),
+        ]);
         $this->assetCollection->method('remove');
 
         $this->pageConfig
@@ -137,10 +103,6 @@ class CanonicalUrlManagerTest extends TestCase
             ->method('addRemotePageAsset')
             ->with('https://example.com/product?variant=blue', 'canonical', $this->anything());
 
-        $this->manager->setCanonical(
-            'https://example.com/product?variant=blue',
-            $this->pageConfig,
-            'product'
-        );
+        $this->manager->setCanonical('https://example.com/product?variant=blue', $this->pageConfig, 'product');
     }
 }

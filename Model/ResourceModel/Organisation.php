@@ -16,7 +16,7 @@ class Organisation extends AbstractDb
      */
     protected function _construct(): void
     {
-        $this->_init('mage-os_seo_organisation', 'entity_id');
+        $this->_init('mageos_seo_organisation', 'entity_id');
     }
 
     /**

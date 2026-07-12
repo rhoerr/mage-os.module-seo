@@ -6,20 +6,24 @@ Product structured data is built by template — each template maps to a schema.
 
 ## The 16 built-in templates
 
+Every template emits a `Product` node — Google's Product rich results and merchant listings
+require the Product type. Templates for creative works add a secondary type alongside Product;
+category-specific data with no valid Product property is emitted via `additionalProperty`.
+
 | Template code | Admin label | schema.org @type | Typical use |
 |---|---|---|---|
 | `GenericProduct` | Generic Product | Product | Default fallback for unconfigured categories |
-| `Food` | Food & Grocery | FoodProduct | Food, drinks, condiments |
-| `Apparel` | Clothing & Apparel | Apparel | Clothing, shoes, accessories |
+| `Food` | Food & Grocery | Product | Food, drinks, condiments |
+| `Apparel` | Clothing & Apparel | Product | Clothing, shoes, accessories |
 | `Jewelry` | Jewelry | Product | Rings, necklaces, bracelets |
 | `HomeDecor` | Home Decor & Furniture | Product | Prints, cushions, ceramics, furniture |
-| `Book` | Books | Book | Physical and digital books |
-| `Software` | Software & Apps | SoftwareApplication | Digital products, apps |
+| `Book` | Books | Product + Book | Physical and digital books |
+| `Software` | Software & Apps | Product + SoftwareApplication | Digital products, apps |
 | `Toy` | Toys & Games | Product | Children's toys, games, puzzles |
 | `HealthProduct` | Health & Wellness | Product | Supplements, wellness products |
 | `Cosmetics` | Beauty & Cosmetics | Product | Skincare, makeup, perfume |
 | `Pet` | Pet Supplies | Product | Food, accessories, toys for pets |
-| `ArtAndCraft` | Art & Craft | VisualArtwork | Original art, prints, craft supplies |
+| `ArtAndCraft` | Art & Craft | Product + VisualArtwork | Original art, prints, craft supplies |
 | `ElectronicsSimple` | Electronics | Product | Simple electronic products |
 | `Tool` | Tools & Hardware | Product | Hand tools, hardware, workshop supplies |
 | `Stationery` | Stationery & Office | Product | Notebooks, pens, office supplies |

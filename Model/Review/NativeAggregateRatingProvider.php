@@ -34,7 +34,7 @@ class NativeAggregateRatingProvider implements AggregateRatingProviderInterface
     public function getRating(int $productId, int $storeId): ?array
     {
         $connection = $this->resourceConnection->getConnection();
-        $table      = $connection->getTableName('review_entity_summary');
+        $table      = $this->resourceConnection->getTableName('review_entity_summary');
 
         $row = $connection->fetchRow(
             $connection->select()

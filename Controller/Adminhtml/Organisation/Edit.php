@@ -6,10 +6,11 @@ namespace MageOS\Seo\Controller\Adminhtml\Organisation;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
 
-class Edit extends Action
+class Edit extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::organisation';
 

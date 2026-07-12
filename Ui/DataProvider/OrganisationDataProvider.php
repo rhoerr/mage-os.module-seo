@@ -147,7 +147,7 @@ class OrganisationDataProvider extends AbstractDataProvider
 
         return array_merge(
             parent::getConfigData(),
-            ['submit_url' => $this->urlBuilder->getUrl('rs_seo/organisation/save', $params)]
+            ['submit_url' => $this->urlBuilder->getUrl('mageos_seo/organisation/save', $params)]
         );
     }
 

@@ -16,6 +16,7 @@ class RobotsMeta implements OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
+            ['value' => '',                 'label' => (string) __('Use Magento Default (no override)')],
             ['value' => 'INDEX,FOLLOW',     'label' => 'INDEX, FOLLOW'],
             ['value' => 'NOINDEX,FOLLOW',   'label' => 'NOINDEX, FOLLOW'],
             ['value' => 'INDEX,NOFOLLOW',   'label' => 'INDEX, NOFOLLOW'],

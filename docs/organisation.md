@@ -31,7 +31,7 @@ The form supports standard Magento store-scope switching: select a website or st
 
 ## Multi-store scoping
 
-Organisation settings are stored per scope in the `mage-os_seo_organisation` table, using the same `scope` / `scope_id` pattern as Magento system config:
+Organisation settings are stored per scope in the `mageos_seo_organisation` table, using the same `scope` / `scope_id` pattern as Magento system config:
 
 | Scope | scope column | scope_id column |
 |---|---|---|
@@ -78,7 +78,7 @@ Common profiles to include:
 
 ## What happens if Organisation is left blank
 
-- The `OrganizationProvider` returns an empty schema array — no `Organization` or `WebSite` nodes are output in JSON-LD.
+- The `OrganisationProvider` returns an empty schema array — no `Organization` or `WebSite` nodes are output in JSON-LD.
 - `/llms.txt` uses the store name as the heading but omits the description and social profiles.
 - Google Search Console and schema validators will not flag errors, but rich results that depend on the `Organization` node will not be eligible.
 

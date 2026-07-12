@@ -155,12 +155,11 @@ class LlmsTxtBuilder
             foreach (array_keys($templates) as $templateCode) {
                 // Map template codes to their schema.org @type
                 $typeMap = [
-                    'Food'             => 'FoodProduct',
-                    'Apparel'          => 'Apparel',
+                    // Book/Software/ArtAndCraft emit multi-type ["Product", X] nodes;
+                    // listed here by their distinguishing secondary type.
                     'Book'             => 'Book',
                     'Software'         => 'SoftwareApplication',
                     'ArtAndCraft'      => 'VisualArtwork',
-                    'GenericProduct'   => 'Product',
                 ];
                 $schemaTypes[] = $typeMap[$templateCode] ?? 'Product';
             }
@@ -203,7 +202,7 @@ class LlmsTxtBuilder
     }
 
     /**
-     * Build the category tree section.
+     * Build the category tree section for the current store's tree only.
      *
      * @param string $baseUrl
      * @return string
@@ -213,16 +212,45 @@ class LlmsTxtBuilder
         $lines = ['## Category Tree'];
 
         try {
+            /** @var \Magento\Store\Model\Store $store */
+            $store   = $this->storeManager->getStore();
+            $storeId = (int) $store->getId();
+            $rootId  = (int) $store->getRootCategoryId();
+
             $collection = $this->categoryCollectionFactory->create();
-            $collection->addAttributeToSelect(['name', 'url_key', 'url_path', 'level', 'is_active', 'product_count'])
-                ->addAttributeToFilter('is_active', '1')
+            // Store scoping is essential: without setStoreId + the root-path filter
+            // this would list every website's categories (including hidden B2B or
+            // staging trees) and pair their url_path with this store's base URL.
+            $collection->setStoreId($storeId)
+                ->addAttributeToSelect(['name', 'url_path', 'is_active'])
+                ->addPathsFilter(['1/' . $rootId . '/'])
+                ->addAttributeToFilter('is_active', (string) 1)
                 ->addAttributeToFilter('level', ['gt' => 1])
                 ->setOrder('path', 'ASC');
 
+            // One grouped query for all product counts. Direct assignment counts only:
+            // anchor roll-up counts cost one query per category.
+            $collection->loadProductCount($collection->getItems(), true, false);
+
+            $urlSuffix = (string) $this->scopeConfig->getValue(
+                'catalog/seo/category_url_suffix',
+                ScopeInterface::SCOPE_STORE,
+                $storeId
+            );
+
+            // Children of a disabled subtree are individually still is_active=1, so
+            // only emit categories whose full ancestor chain has been emitted.
+            $visible = [$rootId => true];
             foreach ($collection as $category) {
+                $parentId = (int) $category->getParentId();
+                if (!isset($visible[$parentId])) {
+                    continue;
+                }
+                $visible[(int) $category->getId()] = true;
+
                 $level  = max(0, (int) $category->getLevel() - 2);
                 $indent = str_repeat('  ', $level);
-                $url    = $baseUrl . '/' . ltrim((string) $category->getUrlPath(), '/');
+                $url    = $baseUrl . '/' . ltrim((string) $category->getUrlPath(), '/') . $urlSuffix;
                 $count  = (int) $category->getProductCount();
                 $suffix = $count > 0 ? " ({$count} products)" : '';
                 $lines[] = "{$indent}- {$category->getName()}{$suffix}: {$url}";

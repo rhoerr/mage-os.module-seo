@@ -5,30 +5,30 @@
         Invalidate llms.txt FPC cache tags whenever organisation, category,
         or vendor data changes so the documents are regenerated promptly.
         Bridge modules (SellersSeo) invalidate on vendor save via their own
-        events.xml and add the RS_LLMS / RS_LLMS_FULL tags to the purge call.
+        events.xml and add the MAGEOS_SEO_LLMS / MAGEOS_SEO_LLMS_FULL tags to the purge call.
     -->
     <event name="catalog_category_save_after">
-        <observer name="rs_seo_invalidate_llms_on_category_save"
+        <observer name="mageos_seo_invalidate_llms_on_category_save"
                   instance="MageOS\Seo\Observer\InvalidateLlmsTxtCache"/>
-        <observer name="rs_seo_invalidate_hreflang_sitemap_on_category_save"
+        <observer name="mageos_seo_invalidate_hreflang_sitemap_on_category_save"
                   instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
     </event>
 
     <!-- Product save: refresh the llms.jsonl tag and the hreflang sitemap. -->
     <event name="catalog_product_save_after">
-        <observer name="rs_seo_invalidate_llms_jsonl_on_product_save"
+        <observer name="mageos_seo_invalidate_llms_jsonl_on_product_save"
                   instance="MageOS\Seo\Observer\InvalidateLlmsJsonlCache"/>
-        <observer name="rs_seo_invalidate_hreflang_sitemap_on_product_save"
+        <observer name="mageos_seo_invalidate_hreflang_sitemap_on_product_save"
                   instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
     </event>
 
     <!-- Hreflang sitemap: invalidate when URL-affecting data changes. -->
     <event name="cms_page_save_after">
-        <observer name="rs_seo_invalidate_hreflang_sitemap_on_cms_save"
+        <observer name="mageos_seo_invalidate_hreflang_sitemap_on_cms_save"
                   instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
     </event>
     <event name="store_save_after">
-        <observer name="rs_seo_invalidate_hreflang_sitemap_on_store_save"
+        <observer name="mageos_seo_invalidate_hreflang_sitemap_on_store_save"
                   instance="MageOS\Seo\Observer\InvalidateHreflangSitemapCache"/>
     </event>
 </config>

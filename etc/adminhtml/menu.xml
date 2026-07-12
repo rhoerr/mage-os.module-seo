@@ -14,7 +14,7 @@
              module="MageOS_Seo"
              sortOrder="10"
              parent="MageOS_Seo::seo"
-             action="rs_seo/organisation/edit"
+             action="mageos_seo/organisation/edit"
              resource="MageOS_Seo::organisation"/>
 
         <add id="MageOS_Seo::faq"
@@ -22,7 +22,7 @@
              module="MageOS_Seo"
              sortOrder="15"
              parent="MageOS_Seo::seo"
-             action="rs_seo/faq/index"
+             action="mageos_seo/faq/index"
              resource="MageOS_Seo::faq"/>
 
         <add id="MageOS_Seo::config_link"

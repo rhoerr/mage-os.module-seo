@@ -115,6 +115,24 @@ class FaqJsonLdTest extends TestCase
         ]);
         $json = $this->block->getJsonLd();
         $this->assertStringNotContainsString('</script>', $json);
-        $this->assertStringContainsString('<\/', $json);
+        $decoded = json_decode($json, true);
+        $this->assertIsArray($decoded);
+        $this->assertSame('Hack</script>', $decoded['mainEntity'][0]['name']);
+    }
+
+    public function testHtmlCommentInAnswerKeepsJsonValid(): void
+    {
+        $this->config->method('isStructuredDataEnabled')->willReturn(true);
+        $this->collector->method('getIdentifiers')->willReturn(['x']);
+        $this->sourcePool->method('getFaqs')->willReturn([
+            ['question' => 'Q', 'answer' => 'Text <!-- comment --> more'],
+        ]);
+        $json = $this->block->getJsonLd();
+        $this->assertStringNotContainsString('<!--', $json);
+        // Regression: the old str_replace produced the invalid escape "\!" which made
+        // the whole payload unparseable — the output must stay valid JSON.
+        $decoded = json_decode($json, true);
+        $this->assertIsArray($decoded);
+        $this->assertSame('Text <!-- comment --> more', $decoded['mainEntity'][0]['acceptedAnswer']['text']);
     }
 }

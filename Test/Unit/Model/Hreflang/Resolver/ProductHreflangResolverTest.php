@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\Hreflang\Resolver;
 
 use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Framework\Registry;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 use MageOS\Seo\Model\Hreflang\LinkBuilder;
 use MageOS\Seo\Model\Hreflang\Resolver\ProductHreflangResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -14,9 +14,9 @@ use PHPUnit\Framework\TestCase;
 class ProductHreflangResolverTest extends TestCase
 {
     /**
-     * @var Registry&MockObject
+     * @var CurrentEntity&MockObject
      */
-    private Registry&MockObject $registry;
+    private CurrentEntity&MockObject $currentEntity;
 
     /**
      * @var LinkBuilder&MockObject
@@ -30,9 +30,9 @@ class ProductHreflangResolverTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->registry    = $this->createMock(Registry::class);
+        $this->currentEntity    = $this->createMock(CurrentEntity::class);
         $this->linkBuilder = $this->createMock(LinkBuilder::class);
-        $this->resolver    = new ProductHreflangResolver($this->registry, $this->linkBuilder);
+        $this->resolver    = new ProductHreflangResolver($this->currentEntity, $this->linkBuilder);
     }
 
     public function testHandlesProductView(): void
@@ -42,7 +42,7 @@ class ProductHreflangResolverTest extends TestCase
 
     public function testReturnsEmptyWhenNoCurrentProduct(): void
     {
-        $this->registry->method('registry')->with('current_product')->willReturn(null);
+        $this->currentEntity->method('getProduct')->willReturn(null);
         $this->assertSame([], $this->resolver->getLinks());
     }
 
@@ -50,7 +50,7 @@ class ProductHreflangResolverTest extends TestCase
     {
         $product = $this->createMock(ProductInterface::class);
         $product->method('getId')->willReturn(42);
-        $this->registry->method('registry')->with('current_product')->willReturn($product);
+        $this->currentEntity->method('getProduct')->willReturn($product);
 
         $links = [['hreflang' => 'en-GB', 'url' => 'https://uk/p', 'store_id' => 1]];
         $this->linkBuilder->method('build')->with('product', 42)->willReturn($links);

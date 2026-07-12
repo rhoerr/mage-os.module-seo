@@ -35,6 +35,10 @@ class CmsPageTitleProvider implements PageTitleProviderInterface
 
     /**
      * @inheritdoc
+     *
+     * Only speaks when the page has an explicit meta title: core already applies
+     * meta_title (falling back to the page title), so echoing getTitle() here
+     * would override merchant-configured meta titles.
      */
     public function getTitle(): string
     {
@@ -44,7 +48,7 @@ class CmsPageTitleProvider implements PageTitleProviderInterface
                 return '';
             }
 
-            return (string) $page->getTitle();
+            return (string) $page->getMetaTitle();
         } catch (\Exception) {
             return '';
         }

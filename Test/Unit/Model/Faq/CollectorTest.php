@@ -44,4 +44,24 @@ class CollectorTest extends TestCase
         $this->collector->collect('');
         $this->assertSame([], $this->collector->getIdentifiers());
     }
+
+    public function testResetStateClearsCollectedIdentifiers(): void
+    {
+        $this->collector->collect('shipping');
+        $this->collector->collect('returns');
+
+        $this->collector->_resetState();
+
+        $this->assertSame([], $this->collector->getIdentifiers());
+    }
+
+    public function testCollectsFreshIdentifiersAfterReset(): void
+    {
+        $this->collector->collect('shipping');
+        $this->collector->_resetState();
+
+        $this->collector->collect('warranty');
+
+        $this->assertSame(['warranty'], $this->collector->getIdentifiers());
+    }
 }

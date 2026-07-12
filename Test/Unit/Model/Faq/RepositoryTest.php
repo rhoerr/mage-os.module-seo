@@ -30,11 +30,11 @@ class RepositoryTest extends TestCase
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
         $select->method('order')->willReturnSelf();
-        $this->connection->method('getTableName')->willReturn('mage-os_seo_faq');
         $this->connection->method('select')->willReturn($select);
 
         $resource = $this->createMock(ResourceConnection::class);
         $resource->method('getConnection')->willReturn($this->connection);
+        $resource->method('getTableName')->willReturn('mageos_seo_faq');
 
         $this->repository = new Repository($resource);
     }

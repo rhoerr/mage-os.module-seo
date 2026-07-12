@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\Product;
 
+use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
+
 /**
  * Request-scoped registry that holds the product schema node being assembled
  * for the current page. Allows the variant enricher (ProductVariantUrlSeo bridge)
  * to mutate the base node in-place without producing a duplicate Product schema.
  */
-class SchemaRegistry
+class SchemaRegistry implements ResetAfterRequestInterface
 {
     /** @var array<string, mixed>|null */
     private ?array $productSchema = null;
@@ -76,5 +78,15 @@ class SchemaRegistry
     public function has(): bool
     {
         return $this->productSchema !== null;
+    }
+
+    /**
+     * Drop the assembled schema node between worker-mode requests.
+     *
+     * @return void
+     */
+    public function _resetState(): void // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- framework interface
+    {
+        $this->productSchema = null;
     }
 }

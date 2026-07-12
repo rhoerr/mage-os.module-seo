@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model\PageTitle\Provider;
 
+use Magento\Catalog\Model\Product;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Registry;
 use MageOS\Seo\Api\PageTitleProviderInterface;
+use MageOS\Seo\Model\Catalog\CurrentEntity;
 
 class ProductTitleProvider implements PageTitleProviderInterface
 {
     private const VARIANT_DATA_PARAM = 'variant_slug_data';
 
     /**
-     * @param Registry $registry
+     * @param CurrentEntity $currentEntity
      * @param RequestInterface $request
      */
     public function __construct(
-        private readonly Registry         $registry,
+        private readonly CurrentEntity $currentEntity,
         private readonly RequestInterface $request
     ) {
     }
@@ -40,6 +41,10 @@ class ProductTitleProvider implements PageTitleProviderInterface
 
     /**
      * @inheritdoc
+     *
+     * Only speaks when there is an explicit title (variant title or meta_title):
+     * returning the product name here would override the merchant's meta_title,
+     * which core already applies (with name as its own fallback).
      */
     public function getTitle(): string
     {
@@ -48,7 +53,8 @@ class ProductTitleProvider implements PageTitleProviderInterface
             return (string) $variantData['_title'];
         }
 
-        $product = $this->registry->registry('current_product');
-        return $product ? (string) $product->getName() : '';
+        $product = $this->currentEntity->getProduct();
+        /** @var Product $product */
+        return $product ? (string) $product->getData('meta_title') : '';
     }
 }

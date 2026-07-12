@@ -29,7 +29,7 @@ class AppendAiDirectivesPluginTest extends TestCase
         $this->assertSame('', $this->plugin->buildAiDirectives());
     }
 
-    public function testDisallowsConfiguredBotsAndAllowsTheRest(): void
+    public function testDisallowsConfiguredBotsAndEmitsNoGroupForTheRest(): void
     {
         $this->config->method('isAiRobotsEnabled')->willReturn(true);
         $this->config->method('getAiDisallowedBots')->willReturn(['CCBot', 'Bytespider']);
@@ -40,20 +40,18 @@ class AppendAiDirectivesPluginTest extends TestCase
         // Disallowed bots get a Disallow rule.
         $this->assertMatchesRegularExpression('/User-agent: CCBot\nDisallow: \//', $output);
         $this->assertMatchesRegularExpression('/User-agent: Bytespider\nDisallow: \//', $output);
-        // A bot not in the disallow list is explicitly allowed.
-        $this->assertMatchesRegularExpression('/User-agent: GPTBot\nAllow: \//', $output);
-        $this->assertStringNotContainsString('User-agent: GPTBot' . "\n" . 'Disallow: /', $output);
+        // Allowed bots must get NO group at all: a dedicated "Allow: /" group would
+        // exempt them from every rule in the store's "User-agent: *" group.
+        $this->assertStringNotContainsString('GPTBot', $output);
+        $this->assertStringNotContainsString('Allow: /', $output);
     }
 
-    public function testAllowsEveryBotWhenDisallowListEmpty(): void
+    public function testEmitsNothingWhenDisallowListEmpty(): void
     {
         $this->config->method('isAiRobotsEnabled')->willReturn(true);
         $this->config->method('getAiDisallowedBots')->willReturn([]);
 
-        $output = $this->plugin->buildAiDirectives();
-
-        $this->assertStringNotContainsString('Disallow: /', $output);
-        $this->assertStringContainsString('Allow: /', $output);
+        $this->assertSame('', $this->plugin->buildAiDirectives());
     }
 
     public function testAfterGetDataLeavesResultUntouchedWhenDisabled(): void

@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Model;
 
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\Model\AbstractModel;
 use MageOS\Seo\Api\Data\OrganisationInterface;
 use MageOS\Seo\Model\ResourceModel\Organisation as OrganisationResource;
 
-class Organisation extends AbstractModel implements OrganisationInterface
+class Organisation extends AbstractModel implements OrganisationInterface, IdentityInterface
 {
+    /**
+     * Cache tag carried by every FPC page (Organisation data renders in the
+     * Organization/WebSite schema and OG tags on all pages), so saving a row
+     * purges the affected pages automatically via AbstractModel's
+     * clean_cache_by_tags dispatch — no manual cache-type invalidation needed.
+     */
+    public const CACHE_TAG = 'mageos_seo_organisation';
+
     /**
      * Initialize resource model.
      *
@@ -18,6 +27,14 @@ class Organisation extends AbstractModel implements OrganisationInterface
     protected function _construct(): void
     {
         $this->_init(OrganisationResource::class);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getIdentities(): array
+    {
+        return [self::CACHE_TAG];
     }
 
     /**

@@ -44,7 +44,7 @@ See [robots-meta.md](robots-meta.md) for the full resolution order.
 
 ## Store-view scoping
 
-Product overrides are stored per store view in `mage-os_seo_product_override`. The `store_id` column works the same way as elsewhere in the module:
+Product overrides are stored per store view in `mageos_seo_product_override`. The `store_id` column works the same way as elsewhere in the module:
 
 - `store_id = 0` → applies to all store views (all-stores default)
 - `store_id = N` → applies to that specific store view only, overriding the all-stores value

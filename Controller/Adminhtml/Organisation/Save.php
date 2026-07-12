@@ -6,13 +6,14 @@ namespace MageOS\Seo\Controller\Adminhtml\Organisation;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Cache\TypeListInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\OrganisationRepositoryInterface;
+use MageOS\Seo\Model\Feed\FeedInvalidator;
 
-class Save extends Action
+class Save extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::organisation';
 
@@ -21,16 +22,16 @@ class Save extends Action
     /**
      * @param Context $context
      * @param OrganisationRepositoryInterface $organisationRepository
-     * @param TypeListInterface $cacheTypeList
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
+     * @param FeedInvalidator $feedInvalidator
      */
     public function __construct(
         Context                                          $context,
         private readonly OrganisationRepositoryInterface $organisationRepository,
-        private readonly TypeListInterface               $cacheTypeList,
         private readonly ScopeConfigInterface            $scopeConfig,
-        private readonly StoreManagerInterface           $storeManager
+        private readonly StoreManagerInterface           $storeManager,
+        private readonly FeedInvalidator                 $feedInvalidator
     ) {
         parent::__construct($context);
     }
@@ -135,9 +136,13 @@ class Save extends Action
                 $org->setLocalPresence($localData);
             }
 
+            // Saving purges cached pages automatically: the Organisation model's
+            // identities (clean_cache_by_tags via AbstractModel) match the tag the
+            // JsonLd block puts on every FPC entry — no cache-type invalidation.
             $this->organisationRepository->save($org);
             $savedEntityId = (int) ($org->getEntityId());
-            $this->cacheTypeList->invalidate(['full_page', 'config']);
+            // llms.txt / llms-full.txt embed organisation data; regenerate their files.
+            $this->feedInvalidator->invalidateLlms();
             $this->messageManager->addSuccessMessage(__('Organisation settings have been saved.'));
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage(__('Could not save: %1', $e->getMessage()));

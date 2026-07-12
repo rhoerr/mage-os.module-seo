@@ -7,26 +7,29 @@ namespace MageOS\Seo\Plugin\Catalog\Category;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Message\ManagerInterface;
 use MageOS\Seo\Model\Category\ConfigRepository;
+use Psr\Log\LoggerInterface;
 
 /**
  * Persists the SEO tab data from the category edit form after the category is saved.
  *
- * Plugged into CategoryRepositoryInterface::save (afterSave) so it fires regardless
- * of which admin controller triggers the save.
+ * Registered in etc/adminhtml/di.xml only: the plugin reads admin form POST data, which
+ * must never influence REST/GraphQL/import/cron saves.
  */
 class SaveSeoConfigPlugin
 {
     /**
      * @param RequestInterface $request
      * @param ConfigRepository $configRepository
-     * @param StoreManagerInterface $storeManager
+     * @param ManagerInterface $messageManager
+     * @param LoggerInterface $logger
      */
     public function __construct(
-        private readonly RequestInterface  $request,
-        private readonly ConfigRepository  $configRepository,
-        private readonly StoreManagerInterface $storeManager
+        private readonly RequestInterface $request,
+        private readonly ConfigRepository $configRepository,
+        private readonly ManagerInterface $messageManager,
+        private readonly LoggerInterface  $logger
     ) {
     }
 
@@ -51,47 +54,73 @@ class SaveSeoConfigPlugin
         $postData = $postRequest->getPostValue();
 
         // Only proceed if the SEO tab fields were part of the submitted data
-        if (!isset($postData['rs_seo_schema_template']) &&
-            !isset($postData['rs_seo_enabled_fields']) &&
-            !isset($postData['rs_seo_robots_meta']) &&
-            !isset($postData['rs_seo_override_fields']) &&
-            !isset($postData['rs_seo_item_list_enabled'])) {
+        if (!isset($postData['mageos_seo_schema_template']) &&
+            !isset($postData['mageos_seo_enabled_fields']) &&
+            !isset($postData['mageos_seo_robots_meta']) &&
+            !isset($postData['mageos_seo_override_fields']) &&
+            !isset($postData['mageos_seo_item_list_enabled'])) {
             return $result;
         }
 
         $data = [];
 
-        if (isset($postData['rs_seo_schema_template'])) {
-            $data['schema_template'] = (string) $postData['rs_seo_schema_template'];
+        if (isset($postData['mageos_seo_schema_template'])) {
+            $data['schema_template'] = (string) $postData['mageos_seo_schema_template'];
         }
 
-        if (isset($postData['rs_seo_enabled_fields'])) {
-            $fields = $postData['rs_seo_enabled_fields'];
+        if (isset($postData['mageos_seo_enabled_fields'])) {
+            $fields = $postData['mageos_seo_enabled_fields'];
             $data['enabled_fields'] = \is_array($fields) ? $fields : [];
         }
 
-        if (isset($postData['rs_seo_item_list_enabled'])) {
-            $val = $postData['rs_seo_item_list_enabled'];
+        if (isset($postData['mageos_seo_item_list_enabled'])) {
+            $val = $postData['mageos_seo_item_list_enabled'];
             $data['item_list_enabled'] = ($val === '') ? null : (int) $val;
         }
 
-        if (isset($postData['rs_seo_robots_meta'])) {
-            $data['robots_meta'] = (string) $postData['rs_seo_robots_meta'] ?: null;
+        if (isset($postData['mageos_seo_robots_meta'])) {
+            $data['robots_meta'] = (string) $postData['mageos_seo_robots_meta'] ?: null;
         }
 
-        if (isset($postData['rs_seo_override_fields'])) {
-            $raw = (string) $postData['rs_seo_override_fields'];
-            if ($raw !== '') {
-                $decoded = json_decode($raw, true);
-                $data['override_fields'] = \is_array($decoded) ? $decoded : [];
-            } else {
+        if (isset($postData['mageos_seo_override_fields'])) {
+            $raw = (string) $postData['mageos_seo_override_fields'];
+            if ($raw === '') {
                 $data['override_fields'] = [];
+            } else {
+                $decoded = json_decode($raw, true);
+                if (\is_array($decoded)) {
+                    $data['override_fields'] = $decoded;
+                } else {
+                    // Invalid JSON: keep the stored value rather than silently wiping it.
+                    $this->messageManager->addErrorMessage(
+                        (string) __('SEO override fields were not saved: the value is not valid JSON.')
+                    );
+                }
             }
         }
 
         if (!empty($data)) {
-            $storeId = (int) $this->storeManager->getStore()->getId();
-            $this->configRepository->save($categoryId, $data, $storeId);
+            // Core admin category forms submit the selected store view as "store_id"
+            // (the edit page URL carries "store"); the adminhtml current store is
+            // always store 0, so reading the store manager here would silently pin
+            // every override to the default scope.
+            $storeId = max(0, (int) $this->request->getParam(
+                'store_id',
+                $this->request->getParam('store', 0)
+            ));
+            try {
+                $this->configRepository->save($categoryId, $data, $storeId);
+            } catch (\Throwable $e) {
+                // The category itself is already committed; a SEO-table failure must
+                // not make the whole save look failed.
+                $this->logger->error(
+                    'MageOS_Seo: could not save category SEO config: ' . $e->getMessage(),
+                    ['exception' => $e, 'category_id' => $categoryId, 'store_id' => $storeId]
+                );
+                $this->messageManager->addErrorMessage(
+                    (string) __('The category was saved, but its SEO settings could not be saved.')
+                );
+            }
         }
 
         return $result;

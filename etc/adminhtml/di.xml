@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!--
+    Admin-area-only wiring.
+
+    The catalog save plugins live here (not in the global di.xml) because they read
+    admin form POST data: registered globally they would execute — and be steerable
+    by request payloads — on REST, GraphQL, import and cron saves.
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Category SEO tab persistence -->
+    <type name="Magento\Catalog\Api\CategoryRepositoryInterface">
+        <plugin name="mageos_seo_category_save_seo_config"
+                type="MageOS\Seo\Plugin\Catalog\Category\SaveSeoConfigPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- Product SEO tab persistence -->
+    <type name="Magento\Catalog\Api\ProductRepositoryInterface">
+        <plugin name="mageos_seo_product_save_seo_overrides"
+                type="MageOS\Seo\Plugin\Catalog\Product\SaveSeoOverridesPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- Register the category SEO tab modifier -->
+    <type name="Magento\Catalog\Ui\DataProvider\Category\Form\Modifier\Pool">
+        <arguments>
+            <argument name="modifiers" xsi:type="array">
+                <item name="mageos_seo_category_modifier" xsi:type="array">
+                    <item name="class"     xsi:type="string">MageOS\Seo\Ui\DataProvider\Category\Form\Modifier\SeoModifier</item>
+                    <item name="sortOrder" xsi:type="number">200</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Register the product SEO tab modifier -->
+    <type name="Magento\Catalog\Ui\DataProvider\Product\Form\Modifier\Pool">
+        <arguments>
+            <argument name="modifiers" xsi:type="array">
+                <item name="mageos_seo_product_modifier" xsi:type="array">
+                    <item name="class"     xsi:type="string">MageOS\Seo\Ui\DataProvider\Product\Form\Modifier\SeoModifier</item>
+                    <item name="sortOrder" xsi:type="number">200</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+</config>

@@ -5,57 +5,93 @@ declare(strict_types=1);
 namespace MageOS\Seo\Block;
 
 use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Element\Template\Context;
+use Magento\Store\Model\StoreManagerInterface;
+use MageOS\Seo\Model\Cms\CmsPageResolver;
 
 /**
- * Outputs a canonical URL for the current page.
+ * Outputs a canonical URL for CMS content pages (home page and cms_page_view).
  *
- * Product and category pages manage their own canonicals via
- * CanonicalUrlManager (called from their respective providers/plugins).
- * This block handles all other pages — home, CMS, etc. — where no
- * other mechanism sets a canonical.
+ * Product and category canonicals are core's job (catalog/seo/product_canonical_tag
+ * and category_canonical_tag) or a bridge module's via CanonicalUrlManager — this
+ * block deliberately stays off those pages. It also emits nothing on search, cart,
+ * checkout, account and other non-indexable pages: canonicalising such URLs (or
+ * echoing the request path back as its own canonical) legitimises duplicate URLs
+ * instead of consolidating them.
  *
- * It reads the current page URL from the store, stripping any query
- * string parameters that should not be part of the canonical.
+ * URLs are built from the configured store base URL — never from the client-supplied
+ * Host header — so store codes survive and cache poisoning cannot skew the output.
  */
 class Canonical extends Template
 {
+    private const HANDLE_HOME     = 'cms_index_index';
+    private const HANDLE_CMS_PAGE = 'cms_page_view';
+
     /**
-     * Return the canonical URL for the current page, or empty string if one has already been set.
+     * @param Context $context
+     * @param CmsPageResolver $cmsPageResolver
+     * @param StoreManagerInterface $storeManager
+     * @param mixed[] $data
+     */
+    public function __construct(
+        Context                                $context,
+        private readonly CmsPageResolver       $cmsPageResolver,
+        private readonly StoreManagerInterface $storeManager,
+        array                                  $data = []
+    ) {
+        parent::__construct($context, $data);
+    }
+
+    /**
+     * Return the canonical URL for the current page, or empty string when none applies.
      *
      * @return string
      */
     public function getCanonicalUrl(): string
     {
-        // If a canonical has already been added to the asset collection
-        // (by product or category providers via CanonicalUrlManager),
-        // do not output a second one.
-        // Canonicals are added via addRemotePageAsset() with rel=canonical,
-        // and are keyed by their full URL in GroupedCollection.
-        // We detect them by checking whether any asset key is an absolute
-        // HTTP/HTTPS URL — which is only true for remote page assets
-        // like canonicals and og: tags added via addRemotePageAsset().
-        $assets = $this->pageConfig->getAssetCollection();
-        foreach (array_keys($assets->getAll()) as $identifier) {
-            $identifier = (string) $identifier;
-            if (str_starts_with($identifier, 'http://') || str_starts_with($identifier, 'https://')) {
-                // A remote page asset exists — likely a canonical added by
-                // a product or category provider. Don't add another.
-                return '';
-            }
+        if ($this->hasExistingCanonical()) {
+            return '';
         }
 
         try {
-            /** @var \Magento\Framework\App\Request\Http $request */
-            $request = $this->_request;
-            $scheme = $request->getScheme();
-            $host   = $request->getHttpHost();
-            $path   = $request->getPathInfo() ?: '/';
+            $handles = $this->getLayout()->getUpdate()->getHandles();
+            $baseUrl = rtrim((string) $this->storeManager->getStore()->getBaseUrl(), '/') . '/';
 
-            return rtrim($scheme . '://' . $host . $path, '/') ?: '/';
+            if (\in_array(self::HANDLE_HOME, $handles, true)) {
+                return $baseUrl;
+            }
 
+            if (\in_array(self::HANDLE_CMS_PAGE, $handles, true)) {
+                $page       = $this->cmsPageResolver->resolve();
+                $identifier = $page !== null ? (string) $page->getIdentifier() : '';
+                if ($identifier !== '') {
+                    return $baseUrl . $identifier;
+                }
+            }
+
+            return '';
         } catch (\Exception) {
             return '';
         }
+    }
+
+    /**
+     * Whether a canonical link asset has already been added by core or another module.
+     *
+     * Detected by asset content type — matching identifier prefixes would false-positive
+     * on unrelated remote assets (font preloads, og images) and kill the fallback.
+     *
+     * @return bool
+     */
+    private function hasExistingCanonical(): bool
+    {
+        foreach ($this->pageConfig->getAssetCollection()->getAll() as $asset) {
+            if ($asset->getContentType() === 'canonical') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

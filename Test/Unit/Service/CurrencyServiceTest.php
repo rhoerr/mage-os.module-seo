@@ -72,14 +72,14 @@ class CurrencyServiceTest extends TestCase
         $this->assertSame('GBP', $this->service->getBaseCurrencyCode());
     }
 
-    public function testGetBaseCurrencyCodeFallsBackToGbpOnException(): void
+    public function testGetBaseCurrencyCodeReturnsEmptyStringOnException(): void
     {
         $this->store
             ->method('getBaseCurrencyCode')
             ->willThrowException(new \Exception('Store error'));
 
-        // Ultimate fallback is the hardcoded 'GBP'
-        $this->assertSame('GBP', $this->service->getBaseCurrencyCode());
+        // No store context means no knowable currency — never invent one.
+        $this->assertSame('', $this->service->getBaseCurrencyCode());
     }
 
     public function testGetCurrentCurrencySymbolReturnsSymbol(): void

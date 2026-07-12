@@ -6,15 +6,17 @@ namespace MageOS\Seo\Test\Unit\Model\Product\Builder;
 
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\CatalogInventory\Api\Data\StockItemInterface;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Pricing\Price\PriceInterface;
 use Magento\Framework\Pricing\PriceInfoInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
 use MageOS\Seo\Model\Product\Builder\GenericProductBuilder;
+use MageOS\Seo\Model\Product\GtinValidator;
+use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
+use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,9 +39,9 @@ class GenericProductBuilderTest extends TestCase
     private CurrencyService&MockObject $currencyService;
 
     /**
-     * @var StockRegistryInterface&MockObject
+     * @var AvailabilityResolver&MockObject
      */
-    private StockRegistryInterface&MockObject $stockRegistry;
+    private AvailabilityResolver&MockObject $availabilityResolver;
 
     /**
      * @var ImageHelper&MockObject
@@ -81,7 +83,7 @@ class GenericProductBuilderTest extends TestCase
         $this->storeManager    = $this->createMock(StoreManagerInterface::class);
         $this->store           = $this->createMock(Store::class);
         $this->currencyService = $this->createMock(CurrencyService::class);
-        $this->stockRegistry   = $this->createMock(StockRegistryInterface::class);
+        $this->availabilityResolver = $this->createMock(AvailabilityResolver::class);
         $this->imageHelper     = $this->createMock(ImageHelper::class);
         $this->seoConfig       = $this->createMock(Config::class);
         $this->dateTime        = $this->createMock(DateTime::class);
@@ -93,7 +95,8 @@ class GenericProductBuilderTest extends TestCase
         $this->storeManager->method('getStore')->willReturn($this->store);
         $this->store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->currencyService->method('getCurrentCurrencyCode')->willReturn('GBP');
-        // Note: stockItem and getData/getAttributeText are NOT stubbed here — per-test
+        $this->currencyService->method('convertFromBase')->willReturnArgument(0);
+        // Note: availability and getData/getAttributeText are NOT stubbed here — per-test
         // configuration avoids PHPUnit 10's first-match-wins stub ordering issue.
         $this->finalPrice->method('getValue')->willReturn(29.99);
         $this->priceInfo->method('getPrice')->with('final_price')->willReturn($this->finalPrice);
@@ -111,18 +114,14 @@ class GenericProductBuilderTest extends TestCase
         $this->builder = new GenericProductBuilder(
             $this->storeManager,
             $this->currencyService,
-            $this->stockRegistry,
+            $this->availabilityResolver,
             $this->imageHelper,
             $this->seoConfig,
-            $this->dateTime
+            $this->dateTime,
+            new OfferEnricherPool(),
+            new AggregateRatingResolver(),
+            new GtinValidator()
         );
-    }
-
-    private function makeStockItem(bool $inStock): StockItemInterface&MockObject
-    {
-        $item = $this->createMock(StockItemInterface::class);
-        $item->method('getIsInStock')->willReturn($inStock);
-        return $item;
     }
 
     public function testGetTemplateCode(): void
@@ -146,7 +145,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildReturnsSchemaWithRequiredFields(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://schema.org', $schema['@context']);
         $this->assertSame('Product', $schema['@type']);
@@ -157,14 +156,14 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildSetsCorrectSchemaId(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://example.com/test-widget#product', $schema['@id']);
     }
 
     public function testBuildIncludesOffers(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertArrayHasKey('offers', $schema);
         $this->assertSame('Offer', $schema['offers']['@type']);
@@ -173,50 +172,45 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildFormatsPrice(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('29.99', $schema['offers']['price']);
     }
 
     public function testBuildPriceFromVariantDataOverridesProductPrice(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], ['_price' => '49.99']);
         $this->assertSame('49.99', $schema['offers']['price']);
     }
 
     public function testBuildAvailabilityInStockWhenProductInStock(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://schema.org/InStock', $schema['offers']['availability']);
     }
 
     public function testBuildAvailabilityOutOfStockWhenProductOutOfStock(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(false));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::OUT_OF_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://schema.org/OutOfStock', $schema['offers']['availability']);
     }
 
-    public function testBuildAvailabilityFromVariantDataOverridesStockRegistry(): void
+    public function testBuildAvailabilityFromVariantDataOverridesResolver(): void
     {
+        // The resolver must not even be consulted when a bridge supplies availability.
+        $this->availabilityResolver->expects($this->never())->method('resolve');
         $schema = $this->builder->build($this->product, [], [], [
             '_availability' => 'https://schema.org/PreOrder',
         ]);
         $this->assertSame('https://schema.org/PreOrder', $schema['offers']['availability']);
     }
 
-    public function testBuildAvailabilityFallsBackToOutOfStockOnStockRegistryException(): void
-    {
-        $this->stockRegistry->method('getStockItem')->willThrowException(new \Exception('DB error'));
-        $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertSame('https://schema.org/OutOfStock', $schema['offers']['availability']);
-    }
-
     public function testBuildOfferUrlUsesVariantCanonicalUrlWhenPresent(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], [
             '_canonical_url' => 'https://example.com/test-widget?variant=red',
         ]);
@@ -225,7 +219,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildOfferUrlFallsBackToProductUrlWithoutVariant(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://example.com/test-widget', $schema['offers']['url']);
     }
@@ -233,7 +227,7 @@ class GenericProductBuilderTest extends TestCase
     public function testBuildDescriptionFromShortDescription(): void
     {
         // getShortDescription() is a magic __call() on Product; stub via __call.
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => $m === 'getShortDescription' ? 'Short desc' : null
         );
@@ -243,7 +237,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildDescriptionFallsBackToFullDescription(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => match ($m) {
                 'getShortDescription' => '',
@@ -257,7 +251,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildDescriptionStripsHtmlTags(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => $m === 'getShortDescription' ? '<p>A <strong>great</strong> product</p>' : null
         );
@@ -267,7 +261,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildDescriptionDecodesHtmlEntities(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => $m === 'getShortDescription' ? 'Caf&eacute; &amp; Co' : null
         );
@@ -278,14 +272,14 @@ class GenericProductBuilderTest extends TestCase
     public function testBuildDescriptionOmittedWhenEmpty(): void
     {
         // No __call stub — returns null by default → description omitted.
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertArrayNotHasKey('description', $schema);
     }
 
     public function testBuildDescriptionTruncatedTo5000Chars(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $longText = str_repeat('x', 6000);
         $this->product->method('__call')->willReturnCallback(
             fn (string $m) => $m === 'getShortDescription' ? $longText : null
@@ -296,7 +290,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildIncludesImageFromMediaGallery(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         // Use an anonymous class instead of mocking DataObject to avoid __call() stub complexity.
         $image = new class () {
             public function getUrl(): string
@@ -311,7 +305,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildImageIsArrayWhenMultipleImages(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $makeImage = static fn (string $url) => new class ($url) {
             public function __construct(private readonly string $u)
             {
@@ -334,7 +328,7 @@ class GenericProductBuilderTest extends TestCase
     public function testBuildFallsBackToImageHelperWhenGalleryEmpty(): void
     {
         // gallery returns null (default) → imageHelper fallback is triggered.
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->imageHelper->method('getUrl')->willReturn('https://example.com/fallback.jpg');
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertSame('https://example.com/fallback.jpg', $schema['image']);
@@ -343,14 +337,14 @@ class GenericProductBuilderTest extends TestCase
     public function testBuildImageOmittedWhenGalleryEmptyAndHelperReturnsEmpty(): void
     {
         // gallery null + imageHelper returns null → no image key in schema.
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertArrayNotHasKey('image', $schema);
     }
 
     public function testBuildBrandIncludedWhenFieldEnabled(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('getData')->willReturnCallback(
             fn (string $key) => $key === 'manufacturer' ? 'Acme' : null
         );
@@ -365,7 +359,7 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildBrandNotIncludedWhenFieldNotEnabled(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], [], []);
         $this->assertArrayNotHasKey('brand', $schema);
     }
@@ -373,32 +367,45 @@ class GenericProductBuilderTest extends TestCase
     public function testBuildBrandOverrideSetsSchemaKeyDirectly(): void
     {
         // applyOverrides() sets schema['brand'] to the plain string value from overrides.
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, ['brand'], ['brand' => 'Override Brand'], []);
         $this->assertSame('Override Brand', $schema['brand']);
     }
 
-    public function testBuildGtin13IncludedWhenFieldEnabled(): void
+    public function testBuildGtin13IncludedWhenFieldEnabledAndValueValid(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
+        $this->product->method('getData')->willReturnCallback(
+            fn (string $key) => $key === 'gtin13' ? '4006381333931' : null
+        );
+        $this->product->method('getAttributeText')->willReturn(false);
+        $schema = $this->builder->build($this->product, ['gtin13'], [], []);
+        $this->assertSame('4006381333931', $schema['gtin13']);
+    }
+
+    public function testBuildGtin13OmittedWhenValueFailsGs1Validation(): void
+    {
+        // Free-form barcode content (internal SKUs, wrong check digits) must be
+        // omitted rather than emitted as an invalid gtin13.
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('getData')->willReturnCallback(
             fn (string $key) => $key === 'gtin13' ? '1234567890123' : null
         );
         $this->product->method('getAttributeText')->willReturn(false);
         $schema = $this->builder->build($this->product, ['gtin13'], [], []);
-        $this->assertArrayHasKey('gtin13', $schema);
+        $this->assertArrayNotHasKey('gtin13', $schema);
     }
 
     public function testBuildColorFromVariantDataWhenEnabled(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, ['color'], [], ['color' => 'Red']);
         $this->assertSame('Red', $schema['color']);
     }
 
     public function testBuildWeightFromProductAttributeWhenEnabled(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $this->product->method('getData')->willReturnCallback(
             fn (string $key) => $key === 'weight' ? '1.5kg' : null
         );
@@ -410,29 +417,84 @@ class GenericProductBuilderTest extends TestCase
 
     public function testBuildOverridesAppliedToFinalSchema(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], ['name' => 'Overridden Name'], []);
         $this->assertSame('Overridden Name', $schema['name']);
     }
 
     public function testBuildOverridesDoNotApplyNullValues(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
         $schema = $this->builder->build($this->product, [], ['name' => null], []);
         $this->assertSame('Test Widget', $schema['name']);
     }
 
-    public function testBuildPriceValidUntilFormatIsDate(): void
+    public function testBuildPriceValidUntilUsesSyntheticWindowWhenNoSpecialPrice(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
+        $this->dateTime->method('date')->willReturnCallback(
+            static fn (string $format, ?string $input = null): string => $input === null ? '2026-07-10' : '2026-10-10'
+        );
         $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $schema['offers']['priceValidUntil']);
+        $this->assertSame('2026-10-10', $schema['offers']['priceValidUntil']);
     }
 
-    public function testBuildItemConditionIsNewCondition(): void
+    public function testBuildPriceValidUntilPrefersActiveSpecialPriceEndDate(): void
     {
-        $this->stockRegistry->method('getStockItem')->willReturn($this->makeStockItem(true));
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
+        $this->dateTime->method('date')->willReturn('2026-07-10');
+        $this->product->method('getData')->willReturnCallback(
+            static fn (string $key): ?string => $key === 'special_to_date' ? '2026-08-01 00:00:00' : null
+        );
         $schema = $this->builder->build($this->product, [], [], []);
-        $this->assertSame('https://schema.org/NewCondition', $schema['offers']['itemCondition']);
+        $this->assertSame('2026-08-01', $schema['offers']['priceValidUntil']);
+    }
+
+    public function testBuildOmitsPriceValidUntilWhenMonthsConfiguredZero(): void
+    {
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
+        $this->dateTime->method('date')->willReturn('2026-07-10');
+        $builder = new GenericProductBuilder(
+            $this->storeManager,
+            $this->currencyService,
+            $this->availabilityResolver,
+            $this->imageHelper,
+            $this->makeConfigWithMonths(0),
+            $this->dateTime,
+            new OfferEnricherPool(),
+            new AggregateRatingResolver(),
+            new GtinValidator()
+        );
+        $schema = $builder->build($this->product, [], [], []);
+        $this->assertArrayNotHasKey('priceValidUntil', $schema['offers']);
+    }
+
+    public function testBuildDoesNotHardcodeItemCondition(): void
+    {
+        // itemCondition comes from the configurable ItemConditionEnricher; hardcoding
+        // NewCondition left used-goods stores no way to remove it.
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
+        $schema = $this->builder->build($this->product, [], [], []);
+        $this->assertArrayNotHasKey('itemCondition', $schema['offers']);
+    }
+
+    public function testBuildAvailabilityBackOrderWhenOutOfStockButBackorderable(): void
+    {
+        // The backorder decision itself is AvailabilityResolver's (tested there);
+        // the builder passes its result through untouched.
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::BACKORDER);
+
+        $schema = $this->builder->build($this->product, [], [], []);
+        $this->assertSame('https://schema.org/BackOrder', $schema['offers']['availability']);
+    }
+
+    /**
+     * Build a Config mock whose priceValidUntil window is the given number of months.
+     */
+    private function makeConfigWithMonths(int $months): Config&MockObject
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('getPriceValidUntilMonths')->willReturn($months);
+        return $config;
     }
 }

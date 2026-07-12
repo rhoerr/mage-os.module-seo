@@ -36,7 +36,7 @@ Every cross-cutting concern is built as an **extensible provider pool** — a se
 
 ### Answer-engine (AEO)
 
-- **FAQ subsystem** — managed FAQ records with a theme-agnostic `<details>` renderer, a Magento **Widget**, a native **Page Builder** content type, and a request-scoped collector that keeps FAQPage JSON-LD in parity with visible content (block-cache-immune).
+- **FAQ subsystem** — managed FAQ records with a theme-agnostic `<details>` renderer, a Magento **Widget**, a native **Page Builder** content type, and a request-scoped collector that keeps FAQPage JSON-LD in parity with visible content. FAQ blocks carry cache identities, so FPC pages are purged automatically when a FAQ changes.
 - **LocalBusiness** — address/geo/contact/price-range fields on the Organisation record.
 - **Article / Event / Speakable** — bridge pools (empty by default) fed by blog/event modules, plus a configurable Speakable selector set.
 
@@ -52,7 +52,15 @@ Every cross-cutting concern is built as an **extensible provider pool** — a se
 ## Requirements
 
 - PHP 8.1 – 8.5
-- Magento 2.4.x (Mage-OS), including 2.4.9 on PHP 8.5
+- Magento Open Source / Mage-OS **2.4.6-p15 or newer** (`magento/framework
+  ^103.0.6-p15`), including 2.4.9 on PHP 8.5. The module runs unmodified across
+  the whole range: on versions below 2.4.7 a bundled
+  `Compat/ResetAfterRequestInterface` polyfill supplies the worker-mode reset
+  interface, and `Model/Cache/CleaningMode` supplies the full-page-cache
+  cleaning-mode identifier that 2.4.9's `Magento\Framework\Cache\CacheConstants`
+  provides.
+- Magento MSI (`Inventory*`) modules — a hard dependency: product availability
+  is resolved through the MSI service contracts.
 
 ---
 
@@ -100,7 +108,7 @@ Without a Name and URL saved, the Organization node in JSON-LD will render with 
 | Open Graph Tags | Enable OG/Twitter tags | Yes |
 | Structured Data (JSON-LD) | Master switch, default product template, ItemList toggle & max, hasVariant max, priceValidUntil months, aggregate rating | Yes / GenericProduct |
 | AI Discoverability | `/llms.txt`, `/llms-full.txt`, `/llms.jsonl` | Yes / Yes / **No** |
-| Robots Meta | Product / category / **CMS** defaults, pagination policy | INDEX,FOLLOW |
+| Robots Meta | Product / category / **CMS** defaults, pagination policy | *(empty — Magento default applies)* |
 | Hreflang | Enable, language-only, sitemap | Yes |
 | Answer Engine (AEO) | Speakable toggle + CSS selectors | No |
 | AI Crawler robots.txt | Append directives, disallow list | **No** / CCBot,Bytespider |
@@ -180,22 +188,25 @@ This generates an ECDSA P-256 keypair, stores the private key **encrypted**, and
 
 ## Product schema templates
 
-Each template maps to a `ProductSchemaBuilderInterface` implementation and produces a `schema.org/Product` (or sub-type) node tailored to that product category:
+Each template maps to a `ProductSchemaBuilderInterface` implementation. Every template emits a
+`schema.org/Product` node (Google's Product rich results and merchant listings require the
+Product type); templates for creative works add a secondary type alongside Product, and
+category-specific data with no valid Product property is expressed via `additionalProperty`:
 
 | Code | Label | Schema type |
 | --- | --- | --- |
 | GenericProduct | Generic Product | Product |
-| Food | Food & Grocery | FoodProduct |
-| Apparel | Clothing & Apparel | Apparel |
-| Jewelry | Jewelry | Jewelry |
+| Food | Food & Grocery | Product |
+| Apparel | Clothing & Apparel | Product |
+| Jewelry | Jewelry | Product |
 | HomeDecor | Home Decor & Furniture | Product |
-| Book | Books | Book |
-| Software | Software & Apps | SoftwareApplication |
+| Book | Books | Product + Book |
+| Software | Software & Apps | Product + SoftwareApplication |
 | Toy | Toys & Games | Product |
-| HealthProduct | Health & Wellness | HealthAndBeautyBusiness |
+| HealthProduct | Health & Wellness | Product |
 | Cosmetics | Beauty & Cosmetics | Product |
 | Pet | Pet Supplies | Product |
-| ArtAndCraft | Art & Craft | VisualArtwork |
+| ArtAndCraft | Art & Craft | Product + VisualArtwork |
 | ElectronicsSimple | Electronics | Product |
 | Tool | Tools & Hardware | Product |
 | Stationery | Stationery & Office | Product |
@@ -253,7 +264,7 @@ vendor/bin/phpunit -c phpunit.xml.dist --testsuite unit
 vendor/bin/phpstan analyse --memory-limit=1G
 vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes
 vendor/bin/phpcs --standard=phpcs.xml.dist
-XDEBUG_MODE=coverage vendor/bin/infection --min-msi=75 --threads=4
+XDEBUG_MODE=coverage vendor/bin/infection --threads=4  # gate: minMsi in infection.json5
 ```
 
 Integration tests live under `Test/Integration/` and run in CI against a live Magento install via [`graycoreio/github-actions-magento2`](https://github.com/graycoreio/github-actions-magento2). They cannot be run locally without a full Magento installation.

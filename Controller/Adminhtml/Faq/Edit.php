@@ -6,13 +6,14 @@ namespace MageOS\Seo\Controller\Adminhtml\Faq;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use MageOS\Seo\Api\FaqRepositoryInterface;
 
-class Edit extends Action
+class Edit extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'MageOS_Seo::faq';
 

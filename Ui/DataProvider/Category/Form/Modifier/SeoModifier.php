@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Ui\DataProvider\Category\Form\Modifier;
 
+use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Ui\Component\Form\Element\DataType\Text;
 use Magento\Ui\Component\Form\Element\Select;
 use Magento\Ui\Component\Form\Element\Textarea;
@@ -23,14 +24,14 @@ class SeoModifier implements ModifierInterface
      * @param ConfigRepository $categoryConfigRepository
      * @param SchemaTemplate $schemaTemplateSource
      * @param RobotsMeta $robotsMetaSource
-     * @param StoreManagerInterface $storeManager
+     * @param CategoryRepositoryInterface $categoryRepository
      */
     public function __construct(
-        private readonly RequestInterface    $request,
-        private readonly ConfigRepository    $categoryConfigRepository,
-        private readonly SchemaTemplate      $schemaTemplateSource,
-        private readonly RobotsMeta          $robotsMetaSource,
-        private readonly StoreManagerInterface $storeManager,
+        private readonly RequestInterface            $request,
+        private readonly ConfigRepository            $categoryConfigRepository,
+        private readonly SchemaTemplate              $schemaTemplateSource,
+        private readonly RobotsMeta                  $robotsMetaSource,
+        private readonly CategoryRepositoryInterface $categoryRepository,
     ) {
     }
 
@@ -42,7 +43,7 @@ class SeoModifier implements ModifierInterface
      */
     public function modifyMeta(array $meta): array
     {
-        $meta['rs_seo'] = [
+        $meta['mageos_seo'] = [
             'arguments' => [
                 'data' => [
                     'config' => [
@@ -74,7 +75,7 @@ class SeoModifier implements ModifierInterface
                                 'componentType' => Field::NAME,
                                 'formElement'   => 'multiselect',
                                 'dataType'      => Text::NAME,
-                                'dataScope'     => 'rs_seo_enabled_fields',
+                                'dataScope'     => 'mageos_seo_enabled_fields',
                                 'sortOrder'     => 20,
                             ],
                         ],
@@ -111,7 +112,7 @@ class SeoModifier implements ModifierInterface
                                 'componentType' => Field::NAME,
                                 'formElement'   => Textarea::NAME,
                                 'dataType'      => Text::NAME,
-                                'dataScope'     => 'rs_seo_override_fields',
+                                'dataScope'     => 'mageos_seo_override_fields',
                                 'sortOrder'     => 50,
                             ],
                         ],
@@ -136,19 +137,31 @@ class SeoModifier implements ModifierInterface
             return $data;
         }
 
-        $storeId = (int) $this->storeManager->getStore()->getId();
-        $config  = $this->categoryConfigRepository->getForCategory($categoryId, [], $storeId);
-        $config  = $this->categoryConfigRepository->decode($config);
+        // Admin category pages pass the selected store view as the "store" request
+        // parameter; the adminhtml current store is always store 0, so reading the
+        // store manager here would always show the default-scope values.
+        $storeId = max(0, (int) $this->request->getParam('store', 0));
+
+        // Pass the ancestor path so inherited values (nearest configured ancestor)
+        // are displayed in the form exactly as the frontend will resolve them.
+        $categoryPath = [];
+        try {
+            $categoryPath = explode('/', (string) $this->categoryRepository->get($categoryId)->getPath());
+        } catch (NoSuchEntityException) { // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
+        }
+
+        $config = $this->categoryConfigRepository->getForCategory($categoryId, $categoryPath, $storeId);
+        $config = $this->categoryConfigRepository->decode($config);
 
         if (empty($config)) {
             return $data;
         }
 
-        $data[$categoryId]['rs_seo_schema_template']  = $config['schema_template'] ?? '';
-        $data[$categoryId]['rs_seo_enabled_fields']   = $config['enabled_fields'] ?? [];
-        $data[$categoryId]['rs_seo_item_list_enabled'] = $config['item_list_enabled'] ?? '';
-        $data[$categoryId]['rs_seo_robots_meta']       = $config['robots_meta'] ?? '';
-        $data[$categoryId]['rs_seo_override_fields']   = !empty($config['override_fields'])
+        $data[$categoryId]['mageos_seo_schema_template']  = $config['schema_template'] ?? '';
+        $data[$categoryId]['mageos_seo_enabled_fields']   = $config['enabled_fields'] ?? [];
+        $data[$categoryId]['mageos_seo_item_list_enabled'] = $config['item_list_enabled'] ?? '';
+        $data[$categoryId]['mageos_seo_robots_meta']       = $config['robots_meta'] ?? '';
+        $data[$categoryId]['mageos_seo_override_fields']   = !empty($config['override_fields'])
             ? json_encode($config['override_fields'], JSON_PRETTY_PRINT)
             : '';
 
@@ -172,7 +185,7 @@ class SeoModifier implements ModifierInterface
             'componentType' => Field::NAME,
             'formElement'   => Select::NAME,
             'dataType'      => Text::NAME,
-            'dataScope'     => 'rs_seo_' . $name,
+            'dataScope'     => 'mageos_seo_' . $name,
             'sortOrder'     => $sortOrder,
         ];
 

@@ -46,7 +46,7 @@ class WellKnownRouter implements RouterInterface
         }
 
         // Prevent an infinite loop once this router has already forwarded the request.
-        if ($request->getModuleName() === 'rs-seo') {
+        if ($request->getModuleName() === 'mageos-seo') {
             return null;
         }
 
@@ -55,7 +55,7 @@ class WellKnownRouter implements RouterInterface
             return null;
         }
 
-        $request->setModuleName('rs-seo')
+        $request->setModuleName('mageos-seo')
             ->setControllerName('wellknown')
             ->setActionName('index')
             ->setParam('endpoint', $name)

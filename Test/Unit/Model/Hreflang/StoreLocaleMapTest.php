@@ -36,12 +36,13 @@ class StoreLocaleMapTest extends TestCase
         $this->config       = $this->createMock(Config::class);
     }
 
-    private function makeStore(int $id, bool $active, string $baseUrl): Store&MockObject
+    private function makeStore(int $id, bool $active, string $baseUrl, int $websiteId = 1): Store&MockObject
     {
         $store = $this->createMock(Store::class);
         $store->method('getId')->willReturn($id);
         $store->method('getIsActive')->willReturn($active);
         $store->method('getBaseUrl')->willReturn($baseUrl);
+        $store->method('getWebsiteId')->willReturn($websiteId);
         return $store;
     }
 
@@ -114,6 +115,47 @@ class StoreLocaleMapTest extends TestCase
         $this->assertArrayNotHasKey(2, $map->getMap());
     }
 
+    public function testAnInactiveStoreEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        // The skip must `continue`, not `break`: a lower-ID skipped store must
+        // not terminate the loop and drop the valid stores after it.
+        $result = $this->map(
+            [$this->makeStore(1, false, 'https://uk/'), $this->makeStore(2, true, 'https://de/')],
+            [1 => 'en_GB', 2 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayHasKey(2, $result);
+    }
+
+    public function testAStoreWithoutLocaleEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        $result = $this->map(
+            [$this->makeStore(1, true, 'https://uk/'), $this->makeStore(2, true, 'https://de/')],
+            [1 => '', 2 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayNotHasKey(1, $result);
+        $this->assertArrayHasKey(2, $result);
+    }
+
+    public function testADuplicateLocaleEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        // Store 2 is the duplicate (skipped); store 3 with a distinct locale must
+        // still be reached — proving the dedupe skip is `continue`, not `break`.
+        $result = $this->map(
+            [
+                $this->makeStore(1, true, 'https://us/'),
+                $this->makeStore(2, true, 'https://us-b2b/'),
+                $this->makeStore(3, true, 'https://de/'),
+            ],
+            [1 => 'en_US', 2 => 'en_US', 3 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayHasKey(1, $result);
+        $this->assertArrayNotHasKey(2, $result);
+        $this->assertArrayHasKey(3, $result);
+    }
+
     public function testMapIsMemoised(): void
     {
         $this->storeManager->expects($this->once())->method('getStores')
@@ -123,5 +165,56 @@ class StoreLocaleMapTest extends TestCase
         $map = new StoreLocaleMap($this->storeManager, $this->scopeConfig, $this->config);
         $map->getMap();
         $map->getMap();
+    }
+
+    public function testResetStateDropsTheMemoisedMapLikeReset(): void
+    {
+        $this->storeManager->expects($this->exactly(2))->method('getStores')
+            ->willReturn([$this->makeStore(1, true, 'https://uk/')]);
+        $this->config->method('getHreflangExcludedStoreIds')->willReturn([]);
+        $this->scopeConfig->method('getValue')->willReturn('en_GB');
+        $map = new StoreLocaleMap($this->storeManager, $this->scopeConfig, $this->config);
+
+        $map->getMap();
+        $map->_resetState();
+        $map->getMap();
+    }
+
+    public function testStoresSharingALocaleAreDeduplicatedLowestStoreIdWins(): void
+    {
+        // Two hreflang entries with the same value are invalid; only one en-US
+        // alternate may survive, deterministically the lowest store ID.
+        $map = $this->map(
+            [
+                $this->makeStore(3, true, 'https://us-b2b/'),
+                $this->makeStore(1, true, 'https://us/'),
+                $this->makeStore(2, true, 'https://de/'),
+            ],
+            [1 => 'en_US', 2 => 'de_DE', 3 => 'en_US']
+        );
+        $result = $map->getMap();
+        $this->assertArrayHasKey(1, $result);
+        $this->assertArrayNotHasKey(3, $result);
+        $this->assertArrayHasKey(2, $result);
+    }
+
+    public function testSameWebsiteOnlyExcludesOtherWebsitesStores(): void
+    {
+        $this->config->method('isHreflangSameWebsiteOnly')->willReturn(true);
+        $currentStore = $this->makeStore(1, true, 'https://uk/', 1);
+        $this->storeManager->method('getStore')->willReturn($currentStore);
+
+        $map = $this->map(
+            [
+                $currentStore,
+                $this->makeStore(2, true, 'https://de/', 1),
+                $this->makeStore(3, true, 'https://b2b/', 2),
+            ],
+            [1 => 'en_GB', 2 => 'de_DE', 3 => 'fr_FR']
+        );
+        $result = $map->getMap();
+        $this->assertArrayHasKey(1, $result);
+        $this->assertArrayHasKey(2, $result);
+        $this->assertArrayNotHasKey(3, $result);
     }
 }

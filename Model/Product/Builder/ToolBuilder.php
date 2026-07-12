@@ -55,8 +55,25 @@ class ToolBuilder extends AbstractBuilder
             }
         }
 
+        // GTIN is validated (GS1 check digit) before emission; anything that does
+        // not validate is omitted, so a free-form barcode attribute never produces
+        // an invalid gtin13 property.
+        if (\in_array('gtin13', $enabledFields, true)) {
+            $gtin = $overrides['gtin13'] ?? '';
+            if ($gtin === '') {
+                foreach (['barcode', 'ean'] as $code) {
+                    $gtin = $this->attr($product, $code);
+                    if ($gtin !== '') {
+                        break;
+                    }
+                }
+            }
+            if ($gtin !== '') {
+                $schema = $this->applyGtin($schema, (string) $gtin);
+            }
+        }
+
         $simpleFields = [
-            'gtin13'      => ['barcode', 'ean'],
             'mpn'         => ['mpn'],
             'material'    => ['material'],
             'color'       => ['color'],

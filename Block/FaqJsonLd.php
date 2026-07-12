@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Block;
 
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\FaqCollectorInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Faq;
 use MageOS\Seo\Model\Faq\SourcePool;
 
 /**
@@ -18,7 +20,7 @@ use MageOS\Seo\Model\Faq\SourcePool;
  * the collector. Re-resolves the collected identifiers (rather than trusting render-time data) so
  * the schema stays correct even if an element's HTML was block-cached, and dedupes questions.
  */
-class FaqJsonLd extends Template
+class FaqJsonLd extends Template implements IdentityInterface
 {
     /**
      * @param Context $context
@@ -77,16 +79,18 @@ class FaqJsonLd extends Template
             return '';
         }
 
+        // JSON_HEX_TAG/JSON_HEX_AMP encode <, > and & as \uXXXX so neither </script>
+        // nor <!-- can ever appear inside the inline <script> payload, keeping the
+        // output valid JSON (a post-encode str_replace cannot guarantee that).
         $json = json_encode(
             ['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $mainEntity],
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
         if ($json === false) {
             return '';
         }
 
-        // XSS protection: prevent </script> and HTML comment breakouts.
-        return str_replace(['</', '<!--'], ['<\/', '<\!--'], $json);
+        return $json;
     }
 
     /**
@@ -100,5 +104,21 @@ class FaqJsonLd extends Template
             return '';
         }
         return parent::_toHtml();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * Rendered late (end of body), so all visible FAQ elements have registered their
+     * groups by the time FPC collects identities.
+     */
+    public function getIdentities(): array
+    {
+        $identities = [Faq::CACHE_TAG];
+        foreach ($this->collector->getIdentifiers() as $identifier) {
+            $identities[] = Faq::CACHE_TAG . '_group_' . $identifier;
+        }
+
+        return $identities;
     }
 }

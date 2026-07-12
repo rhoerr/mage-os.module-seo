@@ -10,10 +10,13 @@ The module controls the `<meta name="robots">` tag on product and category pages
 
 | Setting | Default | Description |
 |---|---|---|
-| Product pages | `INDEX,FOLLOW` | Applies to all product pages without a specific override |
-| Category pages | `INDEX,FOLLOW` | Applies to all category pages without a specific override |
+| Product pages | *(empty — use Magento default)* | Applies to all product pages without a specific override |
+| Category pages | *(empty — use Magento default)* | Applies to all category pages without a specific override |
 
-These are per-store-view settings. You can set a stricter default (e.g. `NOINDEX,FOLLOW`) on a specific store view while keeping `INDEX,FOLLOW` as the global default.
+The defaults ship empty ("Use Magento Default"): until you configure a value, Magento core's
+**Design → Search Engine Robots** setting stays in charge, so installing the module never
+re-opens a NOINDEXed environment. These are per-store-view settings — you can set a stricter
+default (e.g. `NOINDEX,FOLLOW`) on a specific store view while keeping another value globally.
 
 **Accepted values:** Any combination of `INDEX`, `NOINDEX`, `FOLLOW`, `NOFOLLOW` separated by a comma. Examples: `INDEX,FOLLOW` · `NOINDEX,FOLLOW` · `NOINDEX,NOFOLLOW`
 
@@ -65,9 +68,9 @@ The most specific setting wins:
 ```
 Global default (system config)
     ↑ overridden by
-Category override (mage-os_seo_category_config.robots_meta)
+Category override (mageos_seo_category_config.robots_meta)
     ↑ overridden by
-Product override (mage-os_seo_product_override.robots_meta, for that store view)
+Product override (mageos_seo_product_override.robots_meta, for that store view)
 ```
 
 If no override is set at any level, the global default is used. If the global default is empty, no robots meta tag is output and the browser defaults to `index,follow`.

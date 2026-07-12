@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace MageOS\Seo\Block;
 
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\FaqCollectorInterface;
+use MageOS\Seo\Model\Faq;
 use MageOS\Seo\Model\Faq\SourcePool;
 
 /**
@@ -17,8 +19,11 @@ use MageOS\Seo\Model\Faq\SourcePool;
  * identifier with the request-scoped collector so the late FaqJsonLd block can emit matching
  * FAQPage structured data. Subclasses only set the template and (for widgets) the BlockInterface
  * marker; the resolve→collect flow lives here.
+ *
+ * Implements IdentityInterface so FPC pages rendering this group carry FAQ cache tags
+ * and are purged automatically when a FAQ in the group is saved or deleted.
  */
-class AbstractFaqElement extends Template
+class AbstractFaqElement extends Template implements IdentityInterface
 {
     /**
      * @var array<int, array{question: string, answer: string}>|null
@@ -96,5 +101,18 @@ class AbstractFaqElement extends Template
             return '';
         }
         return parent::_toHtml();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getIdentities(): array
+    {
+        $identities = [Faq::CACHE_TAG];
+        if ($this->getFaqIdentifier() !== '') {
+            $identities[] = Faq::CACHE_TAG . '_group_' . $this->getFaqIdentifier();
+        }
+
+        return $identities;
     }
 }

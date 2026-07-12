@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MageOS\Seo\Ui\DataProvider\Product\Form\Modifier;
 
 use Magento\Framework\App\RequestInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Magento\Ui\Component\Form\Element\DataType\Text;
 use Magento\Ui\Component\Form\Element\Select;
 use Magento\Ui\Component\Form\Element\Textarea;
@@ -20,14 +19,12 @@ class SeoModifier implements ModifierInterface
     /**
      * @param RequestInterface $request
      * @param ProductOverrideRepository $productOverrideRepository
-     * @param StoreManagerInterface $storeManager
      * @param RobotsMeta $robotsMetaSource
      */
     public function __construct(
-        private readonly RequestInterface         $request,
+        private readonly RequestInterface          $request,
         private readonly ProductOverrideRepository $productOverrideRepository,
-        private readonly StoreManagerInterface    $storeManager,
-        private readonly RobotsMeta               $robotsMetaSource
+        private readonly RobotsMeta                $robotsMetaSource
     ) {
     }
 
@@ -39,7 +36,7 @@ class SeoModifier implements ModifierInterface
      */
     public function modifyMeta(array $meta): array
     {
-        $meta['rs_seo_advanced'] = [
+        $meta['mageos_seo_advanced'] = [
             'arguments' => [
                 'data' => [
                     'config' => [
@@ -53,7 +50,7 @@ class SeoModifier implements ModifierInterface
                 ],
             ],
             'children' => [
-                'rs_seo_override_notice' => [
+                'mageos_seo_override_notice' => [
                     'arguments' => [
                         'data' => [
                             'config' => [
@@ -65,14 +62,14 @@ class SeoModifier implements ModifierInterface
                                 'componentType' => Field::NAME,
                                 'formElement'   => 'hidden',
                                 'dataType'      => Text::NAME,
-                                'dataScope'     => 'rs_seo_override_notice',
+                                'dataScope'     => 'mageos_seo_override_notice',
                                 'sortOrder'     => 5,
                                 'visible'       => true,
                             ],
                         ],
                     ],
                 ],
-                'rs_seo_override_fields' => [
+                'mageos_seo_override_fields' => [
                     'arguments' => [
                         'data' => [
                             'config' => [
@@ -82,14 +79,14 @@ class SeoModifier implements ModifierInterface
                                 'componentType' => Field::NAME,
                                 'formElement'   => Textarea::NAME,
                                 'dataType'      => Text::NAME,
-                                'dataScope'     => 'rs_seo_override_fields',
+                                'dataScope'     => 'mageos_seo_override_fields',
                                 'sortOrder'     => 10,
                                 'rows'          => 6,
                             ],
                         ],
                     ],
                 ],
-                'rs_seo_robots_meta' => [
+                'mageos_seo_robots_meta' => [
                     'arguments' => [
                         'data' => [
                             'config' => [
@@ -98,7 +95,7 @@ class SeoModifier implements ModifierInterface
                                 'componentType' => Field::NAME,
                                 'formElement'   => Select::NAME,
                                 'dataType'      => Text::NAME,
-                                'dataScope'     => 'rs_seo_robots_meta',
+                                'dataScope'     => 'mageos_seo_robots_meta',
                                 'sortOrder'     => 20,
                             ],
                             'options' => array_merge(
@@ -127,15 +124,18 @@ class SeoModifier implements ModifierInterface
             return $data;
         }
 
-        $storeId = (int) $this->storeManager->getStore()->getId();
+        // Admin product pages pass the selected store view as the "store" request
+        // parameter; the adminhtml current store is always store 0, so reading the
+        // store manager here would always show the default-scope values.
+        $storeId = max(0, (int) $this->request->getParam('store', 0));
         $overrideRow = $this->productOverrideRepository->getForProduct($productId, $storeId);
 
         $overrideFields = $overrideRow['override_fields'] ?? [];
-        $data[$productId]['rs_seo_override_fields'] = !empty($overrideFields)
+        $data[$productId]['mageos_seo_override_fields'] = !empty($overrideFields)
             ? json_encode($overrideFields, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
             : '';
 
-        $data[$productId]['rs_seo_robots_meta'] = $overrideRow['robots_meta'] ?? '';
+        $data[$productId]['mageos_seo_robots_meta'] = $overrideRow['robots_meta'] ?? '';
 
         return $data;
     }

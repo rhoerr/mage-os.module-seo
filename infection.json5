@@ -1,40 +1,27 @@
 {
     "$schema": "vendor/infection/infection/resources/schema.json",
-    // Scope mutation testing to files that have corresponding unit tests.
-    // Classes exercised only by Test/Integration (repositories, resolvers,
-    // resource models, meta/title/structured-data providers, product builders
-    // without dedicated tests) are excluded because Infection cannot boot the
-    // Magento framework to run those suites locally.
+    // Scope mutation testing to source whose logic unit tests can actually
+    // verify. The excludes are classes that are only meaningfully covered by
+    // Test/Integration against a real database/framework: resource models and
+    // the SQL-construction Category repositories (their WHERE clauses and
+    // per-row ordering are invisible to a mocked adapter, so those mutants are
+    // unkillable in unit tests by design), schema/meta providers, the
+    // llms.txt/llms.jsonl builders and the Organisation repository. Infection
+    // cannot boot Magento to run those suites locally. Catalog/CurrentEntity is
+    // pure Registry delegation. Cron/ is outside the scanned directories.
     "source": {
         "directories": ["Model", "Observer", "Service"],
         "excludes": [
             "ResourceModel",
+            "Catalog/CurrentEntity.php",
             "Category",
-            "Cms",
             "Config/Source/LogoSource.php",
             "Config/Source/OrgType.php",
+            "LlmsJsonl/JsonlBuilder.php",
             "LlmsTxt",
             "MetaTag/Provider",
             "Organisation.php",
             "OrganisationRepository.php",
-            "PageTitle/Provider",
-            "Product/Builder/AbstractBuilder.php",
-            "Product/Builder/ArtAndCraftBuilder.php",
-            "Product/Builder/BookBuilder.php",
-            "Product/Builder/CosmeticsBuilder.php",
-            "Product/Builder/ElectronicsSimpleBuilder.php",
-            "Product/Builder/FoodBuilder.php",
-            "Product/Builder/HealthProductBuilder.php",
-            "Product/Builder/HomeDecorBuilder.php",
-            "Product/Builder/JewelryBuilder.php",
-            "Product/Builder/LocalExperienceBuilder.php",
-            "Product/Builder/PetBuilder.php",
-            "Product/Builder/SoftwareBuilder.php",
-            "Product/Builder/StationeryBuilder.php",
-            "Product/Builder/ToolBuilder.php",
-            "Product/Builder/ToyBuilder.php",
-            "Router",
-            "StructuredData/Provider/BreadcrumbListProvider.php",
             "StructuredData/Provider/CategorySchemaProvider.php",
             "StructuredData/Provider/CmsPageSchemaProvider.php",
             "StructuredData/Provider/ProductSchemaProvider.php"
@@ -42,9 +29,10 @@
     },
     "mutators": { "@default": true },
     "phpUnit": { "configDir": "." },
-    // Baseline thresholds. Raising MSI requires expanding unit-test coverage
-    // into the product builders and structured-data providers listed above.
-    "minMsi": 54,
+    // Baseline thresholds; minMsi sits just below the measured MSI so a
+    // regression fails CI. Raise it as coverage of the remaining excluded
+    // classes (schema/meta providers, llms builders) grows.
+    "minMsi": 58,
     "minCoveredMsi": 70,
     "logs": {
         "text": "infection.log",

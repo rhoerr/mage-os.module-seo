@@ -2,12 +2,12 @@
 /**
  * Canonical URL output template.
  *
- * Only renders when no canonical has already been set by the product
- * or category providers. Covers home page, CMS pages, and any other
- * page type not handled by a more specific provider.
+ * Only renders on the home page and CMS pages, and only when no canonical has
+ * already been set by core or another module. Product/category canonicals are
+ * core's (or a bridge module's) responsibility.
  *
- * Cache safety: fully cacheable — URL is derived from the request path
- * which is part of the FPC cache key.
+ * Cache safety: fully cacheable — the URL derives from the store base URL and
+ * the resolved CMS page, both constant per FPC cache entry.
  *
  * @var \MageOS\Seo\Block\Canonical $block
  */

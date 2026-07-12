@@ -6,8 +6,6 @@ namespace MageOS\Seo\Test\Unit\Model\Product\Builder;
 
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\CatalogInventory\Api\Data\StockItemInterface;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Pricing\Price\PriceInterface;
 use Magento\Framework\Pricing\PriceInfoInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
@@ -16,7 +14,9 @@ use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Api\AggregateRatingProviderInterface;
 use MageOS\Seo\Api\OfferEnricherInterface;
 use MageOS\Seo\Model\Config;
+use MageOS\Seo\Model\Product\AvailabilityResolver;
 use MageOS\Seo\Model\Product\Builder\GenericProductBuilder;
+use MageOS\Seo\Model\Product\GtinValidator;
 use MageOS\Seo\Model\Product\OfferEnricher\Pool as OfferEnricherPool;
 use MageOS\Seo\Model\Review\AggregateRatingResolver;
 use MageOS\Seo\Service\CurrencyService;
@@ -35,9 +35,9 @@ class AbstractBuilderEnrichmentTest extends TestCase
     private StoreManagerInterface&MockObject $storeManager;
 
     /**
-     * @var StockRegistryInterface&MockObject
+     * @var AvailabilityResolver&MockObject
      */
-    private StockRegistryInterface&MockObject $stockRegistry;
+    private AvailabilityResolver&MockObject $availabilityResolver;
 
     /**
      * @var Config&MockObject
@@ -51,19 +51,17 @@ class AbstractBuilderEnrichmentTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->storeManager  = $this->createMock(StoreManagerInterface::class);
-        $store               = $this->createMock(Store::class);
-        $this->stockRegistry = $this->createMock(StockRegistryInterface::class);
-        $this->seoConfig     = $this->createMock(Config::class);
-        $this->product       = $this->createMock(Product::class);
+        $this->storeManager         = $this->createMock(StoreManagerInterface::class);
+        $store                      = $this->createMock(Store::class);
+        $this->availabilityResolver = $this->createMock(AvailabilityResolver::class);
+        $this->seoConfig            = $this->createMock(Config::class);
+        $this->product              = $this->createMock(Product::class);
 
         $store->method('getId')->willReturn(1);
         $store->method('getBaseUrl')->willReturn('https://example.com/');
         $this->storeManager->method('getStore')->willReturn($store);
 
-        $stockItem = $this->createMock(StockItemInterface::class);
-        $stockItem->method('getIsInStock')->willReturn(true);
-        $this->stockRegistry->method('getStockItem')->willReturn($stockItem);
+        $this->availabilityResolver->method('resolve')->willReturn(AvailabilityResolver::IN_STOCK);
 
         $this->product->method('getName')->willReturn('Test Widget');
         $this->product->method('getSku')->willReturn('SKU-001');
@@ -130,6 +128,7 @@ class AbstractBuilderEnrichmentTest extends TestCase
 
         $currencyService = $this->createMock(CurrencyService::class);
         $currencyService->method('getCurrentCurrencyCode')->willReturn('GBP');
+        $currencyService->method('convertFromBase')->willReturnArgument(0);
 
         $imageHelper = $this->createMock(ImageHelper::class);
         $imageHelper->method('init')->willReturnSelf();
@@ -137,12 +136,13 @@ class AbstractBuilderEnrichmentTest extends TestCase
         return new GenericProductBuilder(
             $this->storeManager,
             $currencyService,
-            $this->stockRegistry,
+            $this->availabilityResolver,
             $imageHelper,
             $this->seoConfig,
             $this->createMock(DateTime::class),
             new OfferEnricherPool([$enricher]),
-            new AggregateRatingResolver([$ratingProvider])
+            new AggregateRatingResolver([$ratingProvider]),
+            new GtinValidator()
         );
     }
 
