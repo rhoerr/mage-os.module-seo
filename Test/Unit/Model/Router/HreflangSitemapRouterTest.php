@@ -58,6 +58,9 @@ class HreflangSitemapRouterTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider nonMatchingProvider
+     */
     #[DataProvider('nonMatchingProvider')]
     public function testMalformedSitemapPathReturnsNull(string $path): void
     {
