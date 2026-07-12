@@ -65,7 +65,7 @@ class LlmsTxtRouterTest extends TestCase
     }
 
     /**
-     * @dataProvider nonMatchingProvider
+     * @dataProvider routeProvider
      */
     #[DataProvider('routeProvider')]
     public function testMatchedPathForwardsToController(string $path, string $expectedController): void
