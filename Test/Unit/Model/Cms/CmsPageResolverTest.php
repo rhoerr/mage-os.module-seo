@@ -5,62 +5,117 @@ declare(strict_types=1);
 namespace MageOS\Seo\Test\Unit\Model\Cms;
 
 use Magento\Cms\Api\Data\PageInterface;
+use Magento\Cms\Api\GetPageByIdentifierInterface;
+use Magento\Cms\Api\PageRepositoryInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Request\Http;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use MageOS\Seo\Model\Cms\CmsPageResolver;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-/**
- * CmsPageResolver injects the code-generated Magento\Cms\Model\PageFactory,
- * which does not exist in the standalone test suite's vendor tree, so the
- * class cannot be constructed normally here. These tests build the instance
- * via reflection and cover only the memoisation and worker-mode reset
- * semantics; the resolution paths are covered by integration tests.
- */
 class CmsPageResolverTest extends TestCase
 {
     /**
-     * Build a resolver with memoised state injected, bypassing the constructor.
-     *
-     * @param PageInterface|null $resolved
-     * @param bool $attempted
-     * @return CmsPageResolver
+     * @var PageRepositoryInterface&MockObject
      */
-    private function resolverWithState(?PageInterface $resolved, bool $attempted): CmsPageResolver
+    private PageRepositoryInterface&MockObject $pageRepository;
+
+    /**
+     * @var Http&MockObject
+     */
+    private Http&MockObject $request;
+
+    /**
+     * @var GetPageByIdentifierInterface&MockObject
+     */
+    private GetPageByIdentifierInterface&MockObject $getPageByIdentifier;
+
+    /**
+     * @var ScopeConfigInterface&MockObject
+     */
+    private ScopeConfigInterface&MockObject $scopeConfig;
+
+    /**
+     * @var CmsPageResolver
+     */
+    private CmsPageResolver $resolver;
+
+    protected function setUp(): void
     {
-        $reflection = new \ReflectionClass(CmsPageResolver::class);
-        /** @var CmsPageResolver $resolver */
-        $resolver = $reflection->newInstanceWithoutConstructor();
-        $reflection->getProperty('resolved')->setValue($resolver, $resolved);
-        $reflection->getProperty('attempted')->setValue($resolver, $attempted);
-        return $resolver;
+        $this->pageRepository      = $this->createMock(PageRepositoryInterface::class);
+        $this->request             = $this->createMock(Http::class);
+        $this->getPageByIdentifier = $this->createMock(GetPageByIdentifierInterface::class);
+        $this->scopeConfig         = $this->createMock(ScopeConfigInterface::class);
+
+        $store = $this->createMock(StoreInterface::class);
+        $store->method('getId')->willReturn(1);
+        $storeManager = $this->createMock(StoreManagerInterface::class);
+        $storeManager->method('getStore')->willReturn($store);
+
+        $this->resolver = new CmsPageResolver(
+            $this->pageRepository,
+            $this->request,
+            $this->getPageByIdentifier,
+            $storeManager,
+            $this->scopeConfig
+        );
     }
 
-    public function testResolveReturnsMemoisedPageWithoutTouchingDependencies(): void
+    public function testPageIdParamLoadsByIdWithoutTheIdentifierService(): void
     {
-        // The constructor-promoted dependencies are uninitialized here, so any
-        // attempt to re-resolve would throw — returning the page proves the
-        // memoised path is taken.
-        $page     = $this->createMock(PageInterface::class);
-        $resolver = $this->resolverWithState($page, true);
+        $this->request->method('getParam')->with('page_id')->willReturn(5);
+        $page = $this->createMock(PageInterface::class);
+        $this->pageRepository->method('getById')->with(5)->willReturn($page);
+        $this->getPageByIdentifier->expects($this->never())->method('execute');
 
-        $this->assertSame($page, $resolver->resolve());
+        $this->assertSame($page, $this->resolver->resolve());
     }
 
-    public function testResolveReturnsMemoisedNullWhenAlreadyAttempted(): void
+    public function testPathInfoIdentifierResolvesViaTheService(): void
     {
-        $resolver = $this->resolverWithState(null, true);
+        $this->request->method('getParam')->willReturn(0);
+        $this->request->method('getPathInfo')->willReturn('/about-us');
+        $page = $this->createMock(PageInterface::class);
+        $this->getPageByIdentifier->method('execute')->with('about-us', 1)->willReturn($page);
 
-        $this->assertNull($resolver->resolve());
+        $this->assertSame($page, $this->resolver->resolve());
     }
 
-    public function testResetStateClearsMemoisation(): void
+    public function testEmptyPathUsesHomeIdentifierWithLayoutSuffixStripped(): void
     {
-        $page     = $this->createMock(PageInterface::class);
-        $resolver = $this->resolverWithState($page, true);
+        $this->request->method('getParam')->willReturn(0);
+        $this->request->method('getPathInfo')->willReturn('/');
+        $this->scopeConfig->method('getValue')->willReturn('home|2columns-left');
+        $page = $this->createMock(PageInterface::class);
+        $this->getPageByIdentifier->method('execute')->with('home', 1)->willReturn($page);
 
-        $resolver->_resetState();
+        $this->assertSame($page, $this->resolver->resolve());
+    }
 
-        $reflection = new \ReflectionClass(CmsPageResolver::class);
-        $this->assertNull($reflection->getProperty('resolved')->getValue($resolver));
-        $this->assertFalse($reflection->getProperty('attempted')->getValue($resolver));
+    public function testMissingPageResolvesToNullAndIsMemoised(): void
+    {
+        $this->request->method('getParam')->willReturn(0);
+        $this->request->method('getPathInfo')->willReturn('/missing');
+        $this->getPageByIdentifier->expects($this->once())->method('execute')
+            ->willThrowException(new NoSuchEntityException(__('not found')));
+
+        $this->assertNull($this->resolver->resolve());
+        // Second call must not hit the service again (the null result is memoised).
+        $this->assertNull($this->resolver->resolve());
+    }
+
+    public function testResetStateForcesAFreshResolution(): void
+    {
+        $this->request->method('getParam')->willReturn(0);
+        $this->request->method('getPathInfo')->willReturn('/about-us');
+        $page = $this->createMock(PageInterface::class);
+        $this->getPageByIdentifier->expects($this->exactly(2))->method('execute')->willReturn($page);
+
+        $this->resolver->resolve();
+        $this->resolver->_resetState();
+        $this->resolver->resolve();
     }
 }

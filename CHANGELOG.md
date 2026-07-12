@@ -90,6 +90,10 @@ become public contract.
 - Current product/category resolution goes through a single
   `Model\Catalog\CurrentEntity` shim instead of injecting the deprecated
   `Magento\Framework\Registry` into every provider.
+- `Model\Cms\CmsPageResolver` resolves CMS pages through the
+  `Magento\Cms\Api\GetPageByIdentifierInterface` service contract instead of
+  `PageFactory`/`checkIdentifier()`; behaviour is unchanged (a missing
+  identifier resolves to `null`).
 - composer.json declares all hard module dependencies, a `license` field
   (OSL-3.0), and no longer hardcodes a package version.
 - Feed generation is queue-based: invalidations (and requests hitting a missing
