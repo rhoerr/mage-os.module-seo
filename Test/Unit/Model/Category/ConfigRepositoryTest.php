@@ -87,4 +87,53 @@ class ConfigRepositoryTest extends TestCase
         $repository->save(5, ['schema_template' => 'food']);
         $repository->getForCategory(5);
     }
+
+    public function testStoreRowMergeLetsStoreValuesWinAndPreservesGlobalAndZero(): void
+    {
+        // storeId > 0 loads the global (store 0) and store rows and merges them:
+        // store non-empty values win, a null store value keeps the global value,
+        // and a legitimate 0 is preserved (not treated as "empty").
+        $this->resource->method('getConnection')->willReturn($this->connection);
+        $this->connection->method('fetchAll')->willReturn([
+            ['category_id' => 5, 'store_id' => 0, 'schema_template' => 'generic',
+                'robots_meta' => 'INDEX,FOLLOW', 'item_list_enabled' => 1],
+            ['category_id' => 5, 'store_id' => 2, 'schema_template' => 'food',
+                'robots_meta' => null, 'item_list_enabled' => 0],
+        ]);
+
+        $result = (new ConfigRepository($this->resource))->getForCategory(5, [], 2);
+
+        $this->assertSame('food', $result['schema_template']);
+        $this->assertSame('INDEX,FOLLOW', $result['robots_meta']);
+        $this->assertSame(0, $result['item_list_enabled']);
+    }
+
+    public function testTemplateIsInheritedFromNearestAncestorKeepingOwnValues(): void
+    {
+        $this->resource->method('getConnection')->willReturn($this->connection);
+        // First fetchRow = the category itself (no template); second = ancestor 5.
+        $this->connection->method('fetchRow')->willReturnOnConsecutiveCalls(
+            ['category_id' => 14, 'store_id' => 0, 'schema_template' => '', 'robots_meta' => 'NOINDEX'],
+            ['category_id' => 5, 'store_id' => 0, 'schema_template' => 'generic'],
+        );
+
+        $result = (new ConfigRepository($this->resource))->getForCategory(14, ['1', '2', '5', '14'], 0);
+
+        $this->assertSame('generic', $result['schema_template']);
+        $this->assertSame('NOINDEX', $result['robots_meta']);
+        $this->assertSame(14, $result['category_id']);
+    }
+
+    public function testRootCategoriesAreNotUsedAsTemplateAncestors(): void
+    {
+        // Ancestors 1 and 2 (root / default category) must be skipped, so no
+        // template is inherited and the ancestor rows are never loaded.
+        $this->resource->method('getConnection')->willReturn($this->connection);
+        $this->connection->expects($this->once())->method('fetchRow')
+            ->willReturn(['category_id' => 14, 'store_id' => 0, 'schema_template' => '']);
+
+        $result = (new ConfigRepository($this->resource))->getForCategory(14, ['1', '2'], 0);
+
+        $this->assertSame('', $result['schema_template']);
+    }
 }

@@ -115,6 +115,47 @@ class StoreLocaleMapTest extends TestCase
         $this->assertArrayNotHasKey(2, $map->getMap());
     }
 
+    public function testAnInactiveStoreEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        // The skip must `continue`, not `break`: a lower-ID skipped store must
+        // not terminate the loop and drop the valid stores after it.
+        $result = $this->map(
+            [$this->makeStore(1, false, 'https://uk/'), $this->makeStore(2, true, 'https://de/')],
+            [1 => 'en_GB', 2 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayHasKey(2, $result);
+    }
+
+    public function testAStoreWithoutLocaleEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        $result = $this->map(
+            [$this->makeStore(1, true, 'https://uk/'), $this->makeStore(2, true, 'https://de/')],
+            [1 => '', 2 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayNotHasKey(1, $result);
+        $this->assertArrayHasKey(2, $result);
+    }
+
+    public function testADuplicateLocaleEarlierInTheListDoesNotStopLaterStores(): void
+    {
+        // Store 2 is the duplicate (skipped); store 3 with a distinct locale must
+        // still be reached — proving the dedupe skip is `continue`, not `break`.
+        $result = $this->map(
+            [
+                $this->makeStore(1, true, 'https://us/'),
+                $this->makeStore(2, true, 'https://us-b2b/'),
+                $this->makeStore(3, true, 'https://de/'),
+            ],
+            [1 => 'en_US', 2 => 'en_US', 3 => 'de_DE']
+        )->getMap();
+
+        $this->assertArrayHasKey(1, $result);
+        $this->assertArrayNotHasKey(2, $result);
+        $this->assertArrayHasKey(3, $result);
+    }
+
     public function testMapIsMemoised(): void
     {
         $this->storeManager->expects($this->once())->method('getStores')

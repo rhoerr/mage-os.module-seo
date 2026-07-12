@@ -122,6 +122,32 @@ class FeedInvalidatorTest extends TestCase
         $this->invalidator->invalidateHreflangSitemap();
     }
 
+    public function testInvalidateJsonlCleansBuiltInFpcWithTheJsonlTag(): void
+    {
+        $this->pageCacheConfig->method('isEnabled')->willReturn(true);
+        $this->pageCacheConfig->method('getType')->willReturn((string) PageCacheConfig::BUILT_IN);
+
+        $this->fullPageCache
+            ->expects($this->once())
+            ->method('clean')
+            ->with('matchingAnyTag', ['MAGEOS_SEO_LLMS_JSONL']);
+
+        $this->invalidator->invalidateJsonl();
+    }
+
+    public function testInvalidateHreflangCleansBuiltInFpcWithTheHreflangTag(): void
+    {
+        $this->pageCacheConfig->method('isEnabled')->willReturn(true);
+        $this->pageCacheConfig->method('getType')->willReturn((string) PageCacheConfig::BUILT_IN);
+
+        $this->fullPageCache
+            ->expects($this->once())
+            ->method('clean')
+            ->with('matchingAnyTag', ['MAGEOS_SEO_HREFLANG_SITEMAP']);
+
+        $this->invalidator->invalidateHreflangSitemap();
+    }
+
     public function testEachInvalidationQueuesTheMatchingRebuild(): void
     {
         $this->pageCacheConfig->method('isEnabled')->willReturn(false);
