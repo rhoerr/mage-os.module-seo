@@ -1,16 +1,20 @@
 {
     "$schema": "vendor/infection/infection/resources/schema.json",
-    // Scope mutation testing to unit-tested source. The remaining excludes are
-    // classes exercised only by Test/Integration — resource models, schema/meta
-    // providers, the llms.txt/llms.jsonl builders and the Organisation repository
-    // — which Infection cannot cover because it cannot boot the Magento framework
-    // to run those suites locally. Catalog/CurrentEntity is pure Registry
-    // delegation. Cron/ is outside the scanned directories entirely.
+    // Scope mutation testing to source whose logic unit tests can actually
+    // verify. The excludes are classes that are only meaningfully covered by
+    // Test/Integration against a real database/framework: resource models and
+    // the SQL-construction Category repositories (their WHERE clauses and
+    // per-row ordering are invisible to a mocked adapter, so those mutants are
+    // unkillable in unit tests by design), schema/meta providers, the
+    // llms.txt/llms.jsonl builders and the Organisation repository. Infection
+    // cannot boot Magento to run those suites locally. Catalog/CurrentEntity is
+    // pure Registry delegation. Cron/ is outside the scanned directories.
     "source": {
         "directories": ["Model", "Observer", "Service"],
         "excludes": [
             "ResourceModel",
             "Catalog/CurrentEntity.php",
+            "Category",
             "Config/Source/LogoSource.php",
             "Config/Source/OrgType.php",
             "LlmsJsonl/JsonlBuilder.php",
@@ -28,7 +32,7 @@
     // Baseline thresholds; minMsi sits just below the measured MSI so a
     // regression fails CI. Raise it as coverage of the remaining excluded
     // classes (schema/meta providers, llms builders) grows.
-    "minMsi": 54,
+    "minMsi": 58,
     "minCoveredMsi": 70,
     "logs": {
         "text": "infection.log",
