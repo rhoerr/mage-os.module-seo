@@ -8,6 +8,7 @@ use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\Request\Http;
 use MageOS\Seo\Model\Router\HreflangSitemapRouter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -57,9 +58,7 @@ class HreflangSitemapRouterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider nonMatchingProvider
-     */
+    #[DataProvider('nonMatchingProvider')]
     public function testMalformedSitemapPathReturnsNull(string $path): void
     {
         $this->actionFactory->expects($this->never())->method('create');

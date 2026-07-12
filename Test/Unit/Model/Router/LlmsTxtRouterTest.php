@@ -8,6 +8,7 @@ use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\Request\Http;
 use MageOS\Seo\Model\Router\LlmsTxtRouter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -63,9 +64,7 @@ class LlmsTxtRouterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider routeProvider
-     */
+    #[DataProvider('routeProvider')]
     public function testMatchedPathForwardsToController(string $path, string $expectedController): void
     {
         $request = $this->request($path);
